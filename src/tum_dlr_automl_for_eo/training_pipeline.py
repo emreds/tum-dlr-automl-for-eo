@@ -11,6 +11,7 @@ from pytorch_lightning import (
     seed_everything,
 )
 from pytorch_lightning.loggers import LightningLoggerBase
+
 from tum_dlr_automl_for_eo import utils
 
 log = utils.get_logger(__name__)
