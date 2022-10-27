@@ -4,7 +4,14 @@ import os
 import numpy as np
 import pytorch_lightning as pl
 from monai.apps import download_url, extractall
-from monai.transforms import AddChannel, Compose, EnsureType, LoadImage, RandFlip, ScaleIntensity
+from monai.transforms import (
+    AddChannel,
+    Compose,
+    EnsureType,
+    LoadImage,
+    RandFlip,
+    ScaleIntensity,
+)
 from sklearn import preprocessing
 from torch.utils.data import DataLoader, Dataset
 from tum_dlr_automl_for_eo import utils
@@ -13,8 +20,14 @@ log = utils.get_logger(__name__)
 
 
 class ClassificationTaskDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir, num_classes=6, batch_size: int = 64,
-                 num_workers: int = 0, pin_memory: bool = False):
+    def __init__(
+        self,
+        data_dir,
+        num_classes=6,
+        batch_size: int = 64,
+        num_workers: int = 0,
+        pin_memory: bool = False,
+    ):
         super().__init__()
         self.data_dir = data_dir
         self.img_all = []
@@ -46,28 +59,38 @@ class ClassificationTaskDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         # Define transforms
         train_transforms = Compose(
-            [LoadImage(image_only=True), AddChannel(), ScaleIntensity(),
-             RandFlip(spatial_axis=0, prob=0.5),
-             EnsureType()]
+            [
+                LoadImage(image_only=True),
+                AddChannel(),
+                ScaleIntensity(),
+                RandFlip(spatial_axis=0, prob=0.5),
+                EnsureType(),
+            ]
         )
         val_transforms = Compose(
             [LoadImage(image_only=True), AddChannel(), ScaleIntensity(), EnsureType()]
         )
         # Split dataset in to train, val, test sets.
         num_samples = len(self.img_all)
-        tr_split = int(num_samples * .8)
-        val_split = int(num_samples * .9)
+        tr_split = int(num_samples * 0.8)
+        val_split = int(num_samples * 0.9)
         all_indices = np.arange(num_samples)
         np.random.shuffle(all_indices)
         train_indices = all_indices[:tr_split]
         val_indices = all_indices[tr_split:val_split]
         test_indices = all_indices[val_split:]
-        train_subjects, train_labels = self.img_all[train_indices], self.label_all[
-            train_indices]
-        val_subjects, val_labels = self.img_all[val_indices], self.label_all[
-            val_indices]
-        test_subjects, test_labels = self.img_all[test_indices], self.label_all[
-            test_indices]
+        train_subjects, train_labels = (
+            self.img_all[train_indices],
+            self.label_all[train_indices],
+        )
+        val_subjects, val_labels = (
+            self.img_all[val_indices],
+            self.label_all[val_indices],
+        )
+        test_subjects, test_labels = (
+            self.img_all[test_indices],
+            self.label_all[test_indices],
+        )
 
         self.train_set = MedNISTDataset(train_subjects, train_labels, train_transforms)
         self.val_set = MedNISTDataset(val_subjects, val_labels, val_transforms)
@@ -78,17 +101,29 @@ class ClassificationTaskDataModule(pl.LightningDataModule):
         log.info(f"Number of valset: {len(self.val_set)}")
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, self.hparams.batch_size,
-                          num_workers=self.hparams.num_workers,
-                          drop_last=True, shuffle=True)
+        return DataLoader(
+            self.train_set,
+            self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
+            drop_last=True,
+            shuffle=True,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, self.hparams.batch_size,
-                          num_workers=self.hparams.num_workers, drop_last=True)
+        return DataLoader(
+            self.val_set,
+            self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
+            drop_last=True,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, self.hparams.batch_size,
-                          num_workers=self.hparams.num_workers, drop_last=True)
+        return DataLoader(
+            self.test_set,
+            self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
+            drop_last=True,
+        )
 
 
 class MedNISTDataset(Dataset):
