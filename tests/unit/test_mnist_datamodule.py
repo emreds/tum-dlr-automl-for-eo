@@ -10,7 +10,11 @@ def test_mnist_datamodule(batch_size):
     datamodule = MNISTDataModule(batch_size=batch_size)
     datamodule.prepare_data()
 
-    assert not datamodule.data_train and not datamodule.data_val and not datamodule.data_test
+    assert (
+        not datamodule.data_train
+        and not datamodule.data_val
+        and not datamodule.data_test
+    )
 
     assert os.path.exists(os.path.join("data", "MNIST"))
     assert os.path.exists(os.path.join("data", "MNIST", "raw"))
@@ -19,7 +23,10 @@ def test_mnist_datamodule(batch_size):
 
     assert datamodule.data_train and datamodule.data_val and datamodule.data_test
     assert (
-        len(datamodule.data_train) + len(datamodule.data_val) + len(datamodule.data_test) == 70_000
+        len(datamodule.data_train)
+        + len(datamodule.data_val)
+        + len(datamodule.data_test)
+        == 70_000
     )
 
     assert datamodule.train_dataloader()
