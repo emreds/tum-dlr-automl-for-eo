@@ -20,5 +20,5 @@ def test_mean_accuracy():
 
 def test_variance():
 
-    assert custom_metrics.variance(dummy_acc_list) == 9.16
-    assert custom_metrics.variance(real_acc_list) == 3.2011381801123737
+    assert custom_metrics.variance(dummy_acc_list) == 9.166666666666666
+    assert custom_metrics.variance(real_acc_list) == 3.8413658161348487
