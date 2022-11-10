@@ -12,7 +12,6 @@ def positive_persistence(acc_list):
         pos_current_top25 = np.argsort(acc_list[:, epoch])[-top25_len:]
         pos_common_num_of_models = np.sum(pos_current_top25 == pos_previous_top25)
         pos_persistence *= pos_common_num_of_models / number_of_models
-        print(pos_previous_top25, pos_current_top25, pos_common_num_of_models)
         pos_previous_top25 = pos_current_top25
 
     return pos_persistence
@@ -28,7 +27,6 @@ def negative_persistence(acc_list):
     for epoch in range(1, number_of_epochs):
         neg_current_top25 = np.argsort(acc_list[:, epoch])[:top25_len]
         neg_common_num_of_models = np.sum(neg_current_top25 == neg_previous_top25)
-        print(neg_previous_top25, neg_current_top25, neg_common_num_of_models)
         neg_persistence *= neg_common_num_of_models / number_of_models
         neg_previous_top25 = neg_current_top25
     return neg_persistence
