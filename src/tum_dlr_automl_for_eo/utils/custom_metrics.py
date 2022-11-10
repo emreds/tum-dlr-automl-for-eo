@@ -2,7 +2,7 @@ import numpy as np
 
 
 def positive_persistence(acc_list):
-    pos_persistence, neg_persistence = 1, 1
+    pos_persistence = 1
     number_of_models, number_of_epochs = np.shape(acc_list)
     top25_len = number_of_models / 4
     top25_len = int(np.ceil(top25_len))
