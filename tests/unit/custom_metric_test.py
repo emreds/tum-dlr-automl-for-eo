@@ -200,9 +200,9 @@ uniform_acc_list = np.array([
 
 def test_positive_persistence():
     assert custom_metrics.positive_persistence(random_acc_list) == 0
-    assert custom_metrics.positive_persistence(uniform_acc_list) == 3.637978807091713e-12
+    assert custom_metrics.positive_persistence(uniform_acc_list) == 1.0
 
 
 def test_negative_persistence():
     assert custom_metrics.negative_persistence(random_acc_list) == 0
-    assert custom_metrics.negative_persistence(uniform_acc_list) == 3.637978807091713e-12
+    assert custom_metrics.negative_persistence(uniform_acc_list) == 1.0
