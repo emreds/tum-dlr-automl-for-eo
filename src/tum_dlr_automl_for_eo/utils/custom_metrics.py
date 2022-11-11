@@ -20,7 +20,7 @@ def positive_persistence(acc_list):
         current_top25 = np.argsort(acc_list[:, epoch])[-top25_len:]
         # check the consecutive two epochs, find common models
         current_common_models = current_top25 == previous_top25
-        # compare the common models between two consecutive epochs  
+        # compare the current common models with previous commom models
         current_common_models = (previous_common_models == True) & (current_common_models == True) & (
                 previous_common_models == current_common_models)
 
