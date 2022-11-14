@@ -54,3 +54,11 @@ def negative_persistence(acc_list):
         previous_top25 = current_top25
 
     return len(np.where(current_common_models == True)[0]) / len(np.where(initial_common_models == True)[0])
+
+def mean_accuracy(acc_list):
+    return float(np.mean(acc_list))
+
+
+def variance(acc_list):
+    return float(np.var(acc_list, ddof=1))
+
