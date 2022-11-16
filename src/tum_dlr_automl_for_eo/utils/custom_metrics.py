@@ -22,18 +22,19 @@ def positive_persistence(acc_list):
     top25_len = int(np.ceil(top25_len))
     previous_top25 = np.argsort(acc_list[:, 0])[-top25_len:]
 
-    previous_common_models = [True for i in range(len(previous_top25))]
+    previous_common_models = np.array([True for i in range(len(previous_top25))])
 
     for epoch in range(1, number_of_epochs):
         current_top25 = np.argsort(acc_list[:, epoch])[-top25_len:]
         # check the consecutive two epochs, find common models
         current_common_models = current_top25 == previous_top25
 
-        # compare the current common models with previous commom models
-        current_common_models = (previous_common_models == True) & (current_common_models == True) & (
-                previous_common_models == current_common_models)
 
-        positive_persistence_over_time.append(current_common_models.count(True)/float(top25_len))
+        # compare the current common models with previous commom models
+        current_common_models = (previous_common_models == True) & (current_common_models == True) \
+                                & (previous_common_models == current_common_models)
+
+        positive_persistence_over_time.append(np.count_nonzero(current_common_models)/float(top25_len))
 
         previous_common_models = current_common_models
         previous_top25 = current_top25
@@ -48,7 +49,7 @@ def negative_persistence(acc_list):
     top25_len = int(np.ceil(top25_len))
     previous_top25 = np.argsort(acc_list[:, 0])[:top25_len]
 
-    previous_common_models = [True for i in range(len(previous_top25))]
+    previous_common_models = np.array([True for i in range(len(previous_top25))])
 
     for epoch in range(1, number_of_epochs):
         current_top25 = np.argsort(acc_list[:, epoch])[:top25_len]
@@ -57,7 +58,7 @@ def negative_persistence(acc_list):
         current_common_models = (previous_common_models == True) & (current_common_models == True) & (
                 previous_common_models == current_common_models)
 
-        negative_persistence_over_time.append(current_common_models.count(True)/float(top25_len))
+        negative_persistence_over_time.append(np.count_nonzero(current_common_models)/float(top25_len))
 
         previous_common_models = current_common_models
         previous_top25 = current_top25

@@ -4,7 +4,7 @@ from datetime import datetime
 import sys
 
 import numpy as np
-from . import helper_acc_list
+import helper_acc_list
 
 from src.tum_dlr_automl_for_eo.utils import custom_metrics
 
@@ -46,14 +46,14 @@ def test_variance():
 
 
 def test_positive_persistence():
-    assert custom_metrics.positive_persistence(helper_acc_list.random_acc_list) == 0
-    assert custom_metrics.positive_persistence(helper_acc_list.uniform_acc_list) == 1.0
+    assert custom_metrics.positive_persistence(helper_acc_list.random_acc_list) == [1.0, 0.125, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert custom_metrics.positive_persistence(helper_acc_list.uniform_acc_list) == [1.0 for i in range(helper_acc_list.uniform_acc_list.shape[1])]
+
 
 
 def test_negative_persistence():
-    assert custom_metrics.negative_persistence(helper_acc_list.random_acc_list) == 0
-    assert custom_metrics.negative_persistence(helper_acc_list.uniform_acc_list) == 1.0
-
+    assert custom_metrics.negative_persistence(helper_acc_list.random_acc_list) == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert custom_metrics.negative_persistence(helper_acc_list.uniform_acc_list) == [1.0 for i in range(helper_acc_list.uniform_acc_list.shape[1])]
 
 def test_ruggedness():
     results_1_lag = np.array([1, -13.99825467])
