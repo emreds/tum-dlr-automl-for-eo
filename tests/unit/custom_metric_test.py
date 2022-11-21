@@ -1,5 +1,5 @@
 import numpy as np
-
+import random
 from src.tum_dlr_automl_for_eo.utils import custom_metrics
 
 random_acc_list = np.array([
@@ -196,6 +196,20 @@ uniform_acc_list = np.array([
      98.71714461, 99.22273247, 99.98304143, 99.63479503, 97.01294446,
      98.01170883, 97.44077768, 99.1688268, 97.47531859, 97.24602258,
      97.73384054, 97.51508132, 97.15074502, 97.72929575, 99.9925263]])
+dummy_arc_list = np.array([
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    [0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    [1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1]])
+dummy_acc_list = [92, 45, 67, 89, 97, 96, 39, 32, 76, 23, 48]
+dummy_acc_list_1 = [87, 63]
+dummy_arc_list_1 = np.array([[1, 0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1, 1]])
 
 
 def test_positive_persistence():
@@ -206,3 +220,10 @@ def test_positive_persistence():
 def test_negative_persistence():
     assert custom_metrics.negative_persistence(random_acc_list) == 0
     assert custom_metrics.negative_persistence(uniform_acc_list) == 1.0
+
+
+def test_local_optima():
+    number_of_starting_points = random.randint(1, 10)
+    result = custom_metrics.search_local_optima(dummy_arc_list, dummy_acc_list, number_of_starting_points)
+    assert len(result) == number_of_starting_points
+    assert custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1) == [[0, 87]]
