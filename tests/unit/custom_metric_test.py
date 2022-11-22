@@ -56,7 +56,8 @@ dummy_arc_list = np.array([
     [0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1]])
-dummy_acc_list = [92, 45, 67, 89, 97, 96, 39, 32, 76, 23, 48]
+
+dummy_acc_list_0 = [92, 45, 67, 89, 97, 96, 39, 32, 76, 23, 48]
 dummy_acc_list_1 = [87, 63]
 dummy_arc_list_1 = np.array([[1, 0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1, 1]])
 
@@ -124,6 +125,6 @@ def file_check_helper(path, time):
 
 def test_local_optima():
     number_of_starting_points = random.randint(1, 10)
-    result = custom_metrics.search_local_optima(dummy_arc_list, dummy_acc_list, number_of_starting_points)
+    result = custom_metrics.search_local_optima(dummy_arc_list, dummy_acc_list_0, number_of_starting_points)
     assert len(result) == number_of_starting_points
     assert custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1) == [[0, 87]]
