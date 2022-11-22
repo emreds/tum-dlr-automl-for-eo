@@ -45,7 +45,7 @@ def test_variance():
     assert custom_metrics.variance(dummy_2d_acc_list) == 9.166666666666666
     assert custom_metrics.variance(real_2d_acc_list) == 3.8413658161348487
 
-dummy_arc_list = np.array([
+dummy_arc_list_0 = np.array([
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
     [0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
     [1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
@@ -125,6 +125,9 @@ def file_check_helper(path, time):
 
 def test_local_optima():
     number_of_starting_points = random.randint(1, 10)
-    result = custom_metrics.search_local_optima(dummy_arc_list, dummy_acc_list_0, number_of_starting_points)
-    assert len(result) == number_of_starting_points
-    assert custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1) == [[0, 87]]
+    result = custom_metrics.search_local_optima(dummy_arc_list_0, dummy_acc_list_0, number_of_starting_points, 5, 50)
+    assert len(result[0]) == number_of_starting_points and result[1] == 0
+    result1 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1, 8, 50)
+    result2 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 2, 8, 50)
+    assert result1[0] == [[0, 87]] and result1[1] == 0
+    assert result2[0] == [[0, 87]] and result2[1] == 1
