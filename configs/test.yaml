@@ -29,4 +29,4 @@ seed: null
 name: "default"
 
 # passing checkpoint path is necessary
-ckpt_path: logs/experiments/runs/default/2022-03-21_04-40-51/checkpoints/last.ckpt
+ckpt_path: logs/experiments/runs/default/2022-10-20_15-25-27/last.ckpt
