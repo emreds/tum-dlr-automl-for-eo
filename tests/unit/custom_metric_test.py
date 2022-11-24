@@ -124,10 +124,12 @@ def file_check_helper(path, time):
 
 
 def test_local_optima():
+    # This is a stochastic process, so the tests need to be done accordingly 
     number_of_starting_points = random.randint(1, 10)
-    result = custom_metrics.search_local_optima(dummy_arc_list_0, dummy_acc_list_0, number_of_starting_points, 5, 50)
-    assert len(result[0]) == number_of_starting_points and result[1] == 0
-    result1 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1, 8, 50)
-    result2 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 2, 8, 50)
-    assert result1[0] == [[0, 87]] and result1[1] == 0
-    assert result2[0] == [[0, 87]] and result2[1] == 1
+    number_of_iters = 1
+    result = custom_metrics.search_local_optima(dummy_arc_list_0, dummy_acc_list_0, number_of_starting_points, 5, 50,number_of_iters)
+    assert len(result[0]) == number_of_iters and result[1] > 0
+    result1 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1, 8, 50, number_of_iters)
+    result2 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 2, 8, 50, number_of_iters)
+    assert len(result1[0]) == number_of_iters and result1[1] > 0
+    assert len(result2[0]) == number_of_iters and result2[1] > 0

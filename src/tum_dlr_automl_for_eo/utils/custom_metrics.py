@@ -1,3 +1,4 @@
+import math
 import os
 from datetime import datetime
 
@@ -5,9 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
-
 from random import sample
-
 
 def mean_accuracy(acc_list):
     return float(np.mean(acc_list))
@@ -36,6 +35,10 @@ def get_neighbors(architecture, num_of_nei_to_search):
         neighbors.append(curr_architecture)
     return neighbors
 
+# TODO change this to actually fitness estimation
+def compute_architecture_accuracy(architecture):
+    return 50
+
 
 def perform_bils_algorithm(architectures, acc_list, starting_point, num_of_nei_to_search, max_num_of_iter):
     """
@@ -48,7 +51,6 @@ def perform_bils_algorithm(architectures, acc_list, starting_point, num_of_nei_t
     counter = 0
 
     while counter < max_num_of_iter:
-
         curr_architecture = architectures[curr_architecture_index]
         current_acc = acc_list[curr_architecture_index]
         found_arc_index = curr_architecture_index
@@ -58,26 +60,38 @@ def perform_bils_algorithm(architectures, acc_list, starting_point, num_of_nei_t
 
         # Loop over obtained 5 neighbors
         for neighbor in neighbors:
+            found = False
             for arc_index, arc in enumerate(architectures):
 
-                if all(neighbor == arc) and acc_list[arc_index] > current_acc:
-                    found_arc_index = arc_index
-                    found_acc = acc_list[found_arc_index]
+                if all(neighbor == arc):
+                    found = True
+                    if acc_list[arc_index] > current_acc:
+                        found_arc_index = arc_index
+                        found_acc = acc_list[found_arc_index]
+                    break
+            if not found:
+                accuracy = compute_architecture_accuracy(architecture=neighbor)
+                # print('neighbor', np.expand_dims(neighbor,axis=0))
+                # print('architectures', architectures)
+                acc_list = np.append(acc_list,accuracy)
+                architectures = np.append(architectures,np.expand_dims(neighbor,axis=0),axis=0)
+                if accuracy > current_acc:
+                    found_acc = accuracy
+                    found_arc_index = len(architectures) - 1
                     # print(
                     #     f"from:{curr_architecture_index} to:{found_arc_index} pre_acc:{current_acc} found_acc:{found_acc}")
 
-        if found_arc_index != curr_architecture_index and found_acc != current_acc:
+        if found_arc_index != curr_architecture_index:
             curr_architecture_index = found_arc_index
             counter += 1
-
         # if better architecture is not found
         else:
-            break;
+            break
     return found_arc_index, found_acc
 
 
 def search_local_optima(architectures, acc_list, m_staring_points,
-                        num_of_nei_to_search, max_num_of_iter):
+                        num_of_nei_to_search, max_num_of_iter_bills, number_of_iters):
     """
     Performs the BILS Algorithm for M Number of Starting Points
     Parameters
@@ -92,24 +106,31 @@ def search_local_optima(architectures, acc_list, m_staring_points,
     -------
 
     """
-    number_of_architectures = len(architectures)
-    # track found architectures to decide number of local optima.
-    local_optima_track_arr = np.zeros((number_of_architectures,))
-    # randomly choose M starting points
-    starting_points = sample(range(0, number_of_architectures), m_staring_points)
-    obtained_results = []
-    for starting_point in starting_points:
-        # perform BILS Algorithm for each starting points
+    k_arr = []
+    for i in range(number_of_iters):
+        number_of_architectures = len(architectures)
+        # track found architectures to decide number of local optima.
+        k = 0
+        # randomly choose M starting points
+        starting_points = sample(range(0, number_of_architectures), m_staring_points)
+        obtained_results = []
+        for starting_point in starting_points:
+            # perform BILS Algorithm for each starting points
+            k += 1
+            found_arch_index, found_acc = perform_bils_algorithm(architectures, acc_list, starting_point,
+                                                                 num_of_nei_to_search, max_num_of_iter_bills)
+            if [found_arch_index, found_acc] in obtained_results:
+                k_arr.append(k)
+                break
+            else:
+                obtained_results.append([found_arch_index, found_acc])
+        if len(k_arr) != i+1 and k == len(starting_points):
+            k_arr.append(k)
 
-        found_arch_index, found_acc = perform_bils_algorithm(architectures, acc_list, starting_point,
-                                                             num_of_nei_to_search, max_num_of_iter)
-        if [found_arch_index, found_acc] in obtained_results:
-            local_optima_track_arr[found_arch_index] += 1
-        else:
-            obtained_results.append([found_arch_index, found_acc])
-    estimated_num_of_local_optima = np.count_nonzero(local_optima_track_arr)
+    k_mean = np.mean(np.array(k_arr))
+    local_optima_estimation = math.pow(k_mean,2.0)/(-1*np.log(0.5))
 
-    return obtained_results, estimated_num_of_local_optima
+    return k_arr, local_optima_estimation
 
 
 def positive_persistence(acc_list):
