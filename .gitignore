@@ -152,3 +152,6 @@ wandb/
 
 #mlflow output
 mlruns
+
+# Reports and plots.
+reports/*
