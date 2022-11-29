@@ -4,7 +4,9 @@ from pytorch_lightning import LightningDataModule
 from So2SatDataSet import So2SatDataSet
 from monai.apps import download_url
 import os, zipfile
+import ssl
 
+ssl._create_default_https_context = ssl._create_unverified_context
 
 class EODataModule(LightningDataModule):
 
