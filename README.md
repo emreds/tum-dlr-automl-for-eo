@@ -25,9 +25,9 @@ Before using the template, one needs to install the project as a package.
 ```
 pip install -e git+https://github.com/emreds/NASLib.git#egg=naslib
 ```
-* Finally, install the project as a package. Run:
+* Finally, install the rest of the dependencies Run:
 ```
-pip install -e .
+pip install -r requirements.txt
 ```
 ## Run the MNIST example
 This pipeline comes with a toy example (MNIST dataset with a simple feedforward neural network). To run the training (resp. testing) pipeline, simply run:
