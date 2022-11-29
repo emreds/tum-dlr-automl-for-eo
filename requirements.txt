@@ -1,6 +1,3 @@
-# --------- naslib --------- #
-git+https://github.com/emreds/NASLib.git#egg=naslib
-
 black           # code formatting
 flake8          # code analysis
 hydra-colorlog>=1.1.0
