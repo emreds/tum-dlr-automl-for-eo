@@ -1,6 +1,5 @@
 # --------- naslib --------- #
-# git+https://github.com/emreds/NASLib@Develop#egg=naslib
-# git+https://github.com/emreds/NASLib#egg=naslib&subdirectory=tree/Develop/naslib # install a python package from a repo subdirectory
+git+https://github.com/emreds/NASLib.git#egg=naslib
 
 black           # code formatting
 flake8          # code analysis
