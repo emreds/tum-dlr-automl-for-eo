@@ -21,7 +21,11 @@ Before using the template, one needs to install the project as a package.
 * First, create a virtual environment.
 > You can either do it with conda (preferred) or venv.
 * Then, activate the environment
-* Finally, install the project as a package. Run:
+* Install the Naslib with the command below:
+```
+pip install -e git+https://github.com/emreds/NASLib.git#egg=naslib
+```
+* Finally, install the rest of the dependencies Run:
 ```
 pip install -e .
 ```
