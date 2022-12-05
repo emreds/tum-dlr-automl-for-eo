@@ -25,6 +25,7 @@ Before using the template, one needs to install the project as a package.
 ```
 pip install -e git+https://github.com/emreds/NASLib.git#egg=naslib
 ```
+* Join the
 * Finally, install the rest of the dependencies Run:
 ```
 pip install -e .

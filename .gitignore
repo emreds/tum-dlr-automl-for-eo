@@ -157,4 +157,4 @@ mlruns
 reports/*
 
 # naslib
-src/naslib
+**/src/naslib/*
