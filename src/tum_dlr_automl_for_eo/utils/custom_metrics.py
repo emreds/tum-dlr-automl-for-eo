@@ -90,6 +90,48 @@ def perform_bils_algorithm(architectures, acc_list, starting_point, num_of_nei_t
     return found_arc_index, found_acc
 
 
+
+def get_hamming_distance(architecture_1, architecture_2):
+    return np.count_nonzero(architecture_1 != architecture_2)
+
+"""
+find starting points with high density of fully trained architectures, while simultaneously avoiding sampling twice
+from the same area 
+"""
+def find_k_starting_points(architectures, k,radius=3):
+
+    number_of_architectures = len(architectures)
+    tabu_list = [0 for i in range(number_of_architectures)]
+
+    indices = [np.arange(number_of_architectures)]
+    n_of_architectures_nearby = [0 for i in range(number_of_architectures)]
+
+    final_result = []
+    for i in range(number_of_architectures):
+        count_n_of_close_architectures = 0
+        for j in range(number_of_architectures):
+            distance = get_hamming_distance(architecture_1=architectures[j],architecture_2=architectures[i])
+            if distance <= radius:
+                count_n_of_close_architectures += 1
+        n_of_architectures_nearby[i] = count_n_of_close_architectures
+
+    sorted_indices = [x for _, x in sorted(zip(n_of_architectures_nearby, indices),reverse=True)]
+
+    for i in range(number_of_architectures):
+        if tabu_list[sorted_indices[i]] == 0 and len(final_result) < k:
+            final_result.append(sorted_indices[i])
+            for j in range(number_of_architectures):
+                distance = get_hamming_distance(architecture_1=sorted_indices[i], architecture_2=architectures[j])
+                if distance <= radius:
+                    tabu_list[j] = 1
+
+    while len(architectures) < k:
+        sampled_index = sample(range(0, number_of_architectures), 1)[0]
+        if sampled_index not in final_result:
+            final_result.append(sampled_index)
+
+    return final_result
+
 def search_local_optima(architectures, acc_list, m_staring_points,
                         num_of_nei_to_search, max_num_of_iter_bills, number_of_iters):
     """
@@ -112,7 +154,7 @@ def search_local_optima(architectures, acc_list, m_staring_points,
         # track found architectures to decide number of local optima.
         k = 0
         # randomly choose M starting points
-        starting_points = sample(range(0, number_of_architectures), m_staring_points)
+        starting_points = find_k_starting_points(architectures,m_staring_points)
         obtained_results = []
         for starting_point in starting_points:
             # perform BILS Algorithm for each starting points
