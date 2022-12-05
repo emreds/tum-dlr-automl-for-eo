@@ -103,7 +103,7 @@ def find_k_starting_points(architectures, k,radius=3):
     number_of_architectures = len(architectures)
     tabu_list = [0 for i in range(number_of_architectures)]
 
-    indices = [np.arange(number_of_architectures)]
+    indices = list(np.arange(number_of_architectures))
     n_of_architectures_nearby = [0 for i in range(number_of_architectures)]
 
     final_result = []
@@ -121,11 +121,11 @@ def find_k_starting_points(architectures, k,radius=3):
         if tabu_list[sorted_indices[i]] == 0 and len(final_result) < k:
             final_result.append(sorted_indices[i])
             for j in range(number_of_architectures):
-                distance = get_hamming_distance(architecture_1=sorted_indices[i], architecture_2=architectures[j])
+                distance = get_hamming_distance(architecture_1=architectures[sorted_indices[i]], architecture_2=architectures[j])
                 if distance <= radius:
                     tabu_list[j] = 1
 
-    while len(architectures) < k:
+    while len(final_result) < k:
         sampled_index = sample(range(0, number_of_architectures), 1)[0]
         if sampled_index not in final_result:
             final_result.append(sampled_index)
