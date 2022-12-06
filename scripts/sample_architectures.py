@@ -80,5 +80,5 @@ if __name__ == "__main__":
         torch.save(torch_arch, arch_path, )
         
         
-    with open("model_dict.json", 'w') as f:
+    with open("./architectures/model_dict.json", 'w') as f:
         f.write(json.dumps(model_dict, cls=utils.NumpyArrayEncoder))

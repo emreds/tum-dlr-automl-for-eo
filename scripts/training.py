@@ -20,8 +20,9 @@ def get_args():
                     prog = "TUM-DLR-EO training script.",
                     description = "Trains the given model architecture.")
     parser.add_argument("--arch", required=True, help="Path of the architecture file.")
-    parser.add_argument("--data", default="/dev/shm/demir2/hai_nasb_eo/data/", help="Path of the training data.")
-    parser.add_argument("--result", default="/project/p/hai_nasb_eo/training/logs", help="Path to save training results.")
+    # just for once I will download the dataset into the permanent storage.
+    parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
+    parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
     parser.add_argument("--batch_size", default=64, type=int)
     parser.add_argument("--epoch", default=1, type=int)
     parser.add_argument("--lr", default=0.4, type=float)
@@ -143,7 +144,7 @@ if __name__ == "__main__":
     result_path = args.result
     
     try: 
-        network = torch.load(arch_path, result_path)
+        network = torch.load(arch_path)
         batch_size = args.batch_size
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_transform, valid_transform = get_data_transforms()
