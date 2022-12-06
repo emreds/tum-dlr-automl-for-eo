@@ -158,3 +158,6 @@ reports/*
 
 # naslib
 **/src/naslib/*
+
+# architectures
+/scripts/architectures
