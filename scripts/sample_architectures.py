@@ -5,11 +5,14 @@ import numpy as np
 
 from naslib.predictors.utils.models import nasbench1 as nas101_arch
 from naslib.predictors.utils.models import nasbench1_spec
+from naslib.utils import utils
 
 from pathlib import Path
 
 import torch
 import os
+
+import json
 
 
 INPUT = "input"
@@ -52,17 +55,30 @@ if __name__ == "__main__":
     dataset_api = get_dataset_api(config.search_space, config.dataset)
     sampled_architectures = sample_random_architecture(dataset_api=dataset_api)
     os.mkdir("./architectures")
-    num_classes_dic = {"cifar10": 10, "cifar100": 100, "ImageNet16-120": 120, "So2Sat":17}
-
+    
+    out_channel = {"cifar10": 10, "cifar100": 100, "ImageNet16-120": 120, "So2Sat":17}
+    input_channel = {"cifar10": 3, "Sentinel-1":8, "Sentinel-2": 10}
+    model_dict = {}
+    
     for num, arch in enumerate(sampled_architectures):
         spec = nasbench1_spec._ToModelSpec(arch["matrix"], arch["ops"])
 
         torch_arch = nas101_arch.Network(
             spec,
             stem_out=128,
+            stem_in=input_channel["Sentinel-2"],
             num_stacks=3,
             num_mods=3,
-            num_classes=num_classes_dic["So2Sat"],
+            num_classes=out_channel["So2Sat"],
         )
+        
+        
+        model_dict[str(num)] = {"matrix": arch["matrix"], "ops": arch["ops"]}
+        
+        
         arch_path = "./architectures/arch_" + str(num)
-        torch.save(torch_arch, arch_path)
+        torch.save(torch_arch, arch_path, )
+        
+        
+    with open("./architectures/model_dict.json", 'w') as f:
+        f.write(json.dumps(model_dict, cls=utils.NumpyArrayEncoder))

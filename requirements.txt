@@ -32,3 +32,6 @@ torchvision
 
 # -------- statistics -------- #
 statsmodels
+# -------- data -------------- #
+h5py
+monai
