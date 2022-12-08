@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 import logging as log
 from pytorch_lightning import LightningDataModule
-from So2SatDataSet import So2SatDataSet
+from .So2SatDataSet import So2SatDataSet
 from monai.apps import download_url
 import os, zipfile
 import ssl

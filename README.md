@@ -25,6 +25,10 @@ Before using the template, one needs to install the project as a package.
 ```
 pip install -e git+https://github.com/emreds/NASLib.git#egg=naslib
 ```
+* Then cd into the project's folder: 
+```
+cd tum-dlr-automl-for-eo
+```
 * Finally, install the rest of the dependencies Run:
 ```
 pip install -e .
