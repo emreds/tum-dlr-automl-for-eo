@@ -62,20 +62,20 @@ class EODataModule(LightningDataModule):
     def training_dataLoader(self,
                             batch_size: int = 64,
                             pin_memory: bool = True,
-                            # num_workers: int = 0,
+                            num_workers: int = 1,
                             ):
         if self.training_data is not None:
-            return DataLoader(self.training_data, batch_size, pin_memory)
+            return DataLoader(self.training_data, batch_size, pin_memory, num_workers=num_workers)
         else:
             raise Warning("training data is None, did you setup it ?")
 
     def validation_dataLoader(self,
                               batch_size: int = 64,
                               pin_memory: bool = True,
-                              # num_workers: int = 0,
+                              num_workers: int = 1,
                               ):
         if self.validation_data is not None:
-            return DataLoader(self.validation_data, batch_size, pin_memory)
+            return DataLoader(self.validation_data, batch_size, pin_memory, num_workers=num_workers)
         else:
             raise Warning("validation data is None, did you set it up ?")
 
