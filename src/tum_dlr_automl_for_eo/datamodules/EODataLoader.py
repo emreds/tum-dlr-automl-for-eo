@@ -75,7 +75,11 @@ class EODataModule(LightningDataModule):
                               num_workers: int = 0,
                               ):
         if self.validation_data is not None:
-            return DataLoader(self.validation_data, batch_size, pin_memory, num_workers=num_workers)
+            return DataLoader(dataset=self.validation_data, 
+                    batch_size=batch_size,
+                    shuffle=False, 
+                    pin_memory=pin_memory, 
+                    num_workers=num_workers)
         else:
             raise Warning("validation data is None, did you set it up ?")
 
