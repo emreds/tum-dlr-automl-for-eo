@@ -1,17 +1,20 @@
 import argparse
 import logging
 import torch
+import numpy as np
 
 import torchvision.transforms as transforms
 import torch.nn.functional as F
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 import os
 import time 
 
 import logging
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 class CustomCallback(pl.Callback):
     def on_train_epoch_start(self, trainer, pl_module):
@@ -48,37 +51,36 @@ class LightningNetwork(pl.LightningModule):
 
         logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
 
-        # test lightning loss
-        self.log("train accuracy: ", accuracy)
-
         return loss
     
     def validation_step(self, val_batch, batch_idx):
         data, targets = val_batch 
         logits = self.forward(data.float())
-
-        # same logic
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.params["batch_size"]
         loss = self.cross_entropy_loss(logits, targets)
 
         logging.info(f"val_accuracy: {accuracy}, val_loss: {loss}")
-        
-        # test lightning log
-        self.log("test accuracy: ", accuracy)
+
+        return {"val_loss": loss, "val_acc": accuracy}
+
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+        avg_acc = np.mean([x["val_acc"] for x in outputs])
+        logging.info(f"average val_loss: {avg_loss}, average val_acc: {avg_acc} of epoch {self.current_epoch}")
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.network.parameters(), 
-                                    lr=self.params["lr"], 
-                                    momentum=self.params["momentum"], 
-                                    weight_decay=self.params["weight_decay"])
+        # optimizer = torch.optim.SGD(self.network.parameters(), 
+        #                             lr=self.params["lr"], 
+        #                             momentum=self.params["momentum"], 
+        #                             weight_decay=self.params["weight_decay"])
 
-        # optimizer = torch.optim.Adam(
-        #                 self.network.parameters(),
-        #                 lr = self.params["lr"],
-        #                 weight_decay = self.params["weight_decay"]
-        #             )
+        optimizer = torch.optim.Adam(
+                        self.network.parameters(),
+                        lr = self.params["lr"],
+                        weight_decay = self.params["weight_decay"]
+                    )
 
         return optimizer
 
@@ -92,13 +94,14 @@ def get_args():
     parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
     parser.add_argument("--batch_size", default=512, type=int)
     parser.add_argument("--epoch", default=1, type=int)
-    parser.add_argument("--lr", default=0.1, type=float)
+    parser.add_argument("--lr", default=0.001, type=float)
     parser.add_argument("--momentum", default=0.9, type=float)
     parser.add_argument("--num_workers", default=96, type=int)
     parser.add_argument("--weight_decay", default=0, type=float)
     
-    # ddp settings
-    parser.add_argument("--gpus", default=1, type=int)
+    # training with GPU settings, including DDP
+    parser.add_argument("--gpus", default=0, type=int)
+    parser.add_argument("--accelerator", default=None, type=str)
     
     args = parser.parse_args()
     
@@ -191,16 +194,15 @@ if __name__ == "__main__":
         validation_data = data_module.validation_dataLoader(batch_size = batch_size, num_workers=num_workers)
         
         #data_module.setup_testing_data()
-        
+
         # lightning train
         trainer = pl.Trainer(
             devices = args.gpus,
-            accelerator = "gpu",
+            accelerator = args.accelerator,
             max_epochs = args.epoch,
-            callbacks =[CustomCallback()]
+            callbacks =[CustomCallback(), EarlyStopping(monitor="val_loss", mode="min")],
+            fast_dev_run = 2
         )
-        trainer.fit(network, 
-            train_dataloaders=training_data, 
-            val_dataloaders=validation_data)
+        trainer.fit(network, training_data, validation_data)
     except Exception as e:
         logging.error(f"During training some error occured, error: {e}")
