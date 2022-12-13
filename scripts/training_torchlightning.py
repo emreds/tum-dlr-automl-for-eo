@@ -9,8 +9,18 @@ import pytorch_lightning as pl
 
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 import os
+import time 
 
 import logging
+
+class CustomCallback(pl.Callback):
+    def on_train_epoch_start(self, trainer, pl_module):
+        print("\nTraining epoch starts")
+        self.time = time.time()
+    
+    def on_train_epoch_end(self, trainer, pl_module): 
+        logging.info(f"\nTraining epoch ends, training time: {self.time - time.time()}")
+        self.time = 0
 
 class LightningNetwork(pl.LightningModule):
     def __init__(self, params):
@@ -26,7 +36,7 @@ class LightningNetwork(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         data, targets = train_batch 
-        logits = self.forward(data.float())
+        logits = self.forward(data.float())     
 
         # predictions 
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
@@ -63,6 +73,13 @@ class LightningNetwork(pl.LightningModule):
                                     lr=self.params["lr"], 
                                     momentum=self.params["momentum"], 
                                     weight_decay=self.params["weight_decay"])
+
+        # optimizer = torch.optim.Adam(
+        #                 self.network.parameters(),
+        #                 lr = self.params["lr"],
+        #                 weight_decay = self.params["weight_decay"]
+        #             )
+
         return optimizer
 
 def get_args():
@@ -73,13 +90,16 @@ def get_args():
     # just for once I will download the dataset into the permanent storage.
     parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
     parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
-    parser.add_argument("--batch_size", default=64, type=int)
+    parser.add_argument("--batch_size", default=512, type=int)
     parser.add_argument("--epoch", default=1, type=int)
-    parser.add_argument("--lr", default=0.4, type=float)
+    parser.add_argument("--lr", default=0.1, type=float)
     parser.add_argument("--momentum", default=0.9, type=float)
     parser.add_argument("--num_workers", default=96, type=int)
-    parser.add_argument("--weight_decay", default=5e-4, type=float)
-
+    parser.add_argument("--weight_decay", default=0, type=float)
+    
+    # ddp settings
+    parser.add_argument("--gpus", default=1, type=int)
+    
     args = parser.parse_args()
     
     return args
@@ -174,12 +194,13 @@ if __name__ == "__main__":
         
         # lightning train
         trainer = pl.Trainer(
-            devices = "auto",
-            accelerator = "auto",
-            max_epochs = args.epoch
+            devices = args.gpus,
+            accelerator = "gpu",
+            max_epochs = args.epoch,
+            callbacks =[CustomCallback()]
         )
         trainer.fit(network, 
-                    train_dataloader=training_data, 
-                    val_dataloaders=validation_data)
+            train_dataloaders=training_data, 
+            val_dataloaders=validation_data)
     except Exception as e:
         logging.error(f"During training some error occured, error: {e}")
