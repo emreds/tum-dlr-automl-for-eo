@@ -7,7 +7,6 @@ import torchvision.transforms as transforms
 import torch.nn.functional as F
 import torch
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 import os
@@ -18,11 +17,11 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 class CustomCallback(pl.Callback):
     def on_train_epoch_start(self, trainer, pl_module):
-        print("\nTraining epoch starts")
+        logging.info("Training epoch starts")
         self.time = time.time()
     
     def on_train_epoch_end(self, trainer, pl_module): 
-        logging.info(f"\nTraining epoch ends, training time: {time.time() - self.time}")
+        logging.info(f"Training epoch ends, training time: {time.time() - self.time}")
         self.time = 0
 
 class LightningNetwork(pl.LightningModule):
@@ -69,13 +68,11 @@ class LightningNetwork(pl.LightningModule):
         avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
         avg_acc = np.mean([x["val_acc"] for x in outputs])
         logging.info(f"average val_loss: {avg_loss}, average val_acc: {avg_acc} of epoch {self.current_epoch}")
+        # need this for callback metrics
+        self.log("val_acc", torch.tensor(avg_acc))
 
     def configure_optimizers(self):
-        # optimizer = torch.optim.SGD(self.network.parameters(), 
-        #                             lr=self.params["lr"], 
-        #                             momentum=self.params["momentum"], 
-        #                             weight_decay=self.params["weight_decay"])
-
+        # TODO: custom optimizer if necessarys
         optimizer = torch.optim.Adam(
                         self.network.parameters(),
                         lr = self.params["lr"],
@@ -92,7 +89,7 @@ def get_args():
     # just for once I will download the dataset into the permanent storage.
     parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
     parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
-    parser.add_argument("--batch_size", default=512, type=int)
+    parser.add_argument("--batch_size", default=256, type=int, help="Ideally, number of batch_size for DDP is batch_size (of regular 1 gpu case) * #gpus * #nodes. For our case, we scale the regular batch_size * #gpus * 1")
     parser.add_argument("--epoch", default=1, type=int)
     parser.add_argument("--lr", default=0.001, type=float)
     parser.add_argument("--momentum", default=0.9, type=float)
@@ -100,8 +97,10 @@ def get_args():
     parser.add_argument("--weight_decay", default=0, type=float)
     
     # training with GPU settings, including DDP
-    parser.add_argument("--gpus", default=0, type=int)
-    parser.add_argument("--accelerator", default=None, type=str)
+    parser.add_argument("--ddp", default=False, type=bool, help="Enable 1 node - multiple GPUs training")
+    parser.add_argument("--gpus", default=0, type=int, help="Specify number of gpus used for training, given accelerator is gpu, can be >1 if ddp flag is enabled")
+    parser.add_argument("--accelerator", default=None, type=str, help="Use different devices for training, e.g. gpu")
+    parser.add_argument("--fast_dev_run", default=0, type=int, help="Test train/val/test pipeline by running a specific number of batches")
     
     args = parser.parse_args()
     
@@ -165,7 +164,7 @@ def get_params(args):
         "batch_size": args.batch_size,
         "lr": args.lr,
         "momentum": args.momentum,
-        "weight_decay": args.weight_decay,
+        "weight_decay": args.weight_decay
     }
 
 if __name__ == "__main__":
@@ -180,8 +179,6 @@ if __name__ == "__main__":
 
         batch_size = args.batch_size
         num_workers = args.num_workers
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        print('currently using {} for training'.format(device))
         train_transform, valid_transform = get_data_transforms()
         
         data_module = EODataModule(data_path, 'Sentinel-2')
@@ -200,8 +197,9 @@ if __name__ == "__main__":
             devices = args.gpus,
             accelerator = args.accelerator,
             max_epochs = args.epoch,
-            callbacks =[CustomCallback(), EarlyStopping(monitor="val_loss", mode="min")],
-            fast_dev_run = 2
+            callbacks =[CustomCallback(), EarlyStopping(monitor="val_acc", mode="min")],
+            strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
+            fast_dev_run = args.fast_dev_run
         )
         trainer.fit(network, training_data, validation_data)
     except Exception as e:
