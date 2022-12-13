@@ -19,7 +19,7 @@ class CustomCallback(pl.Callback):
         self.time = time.time()
     
     def on_train_epoch_end(self, trainer, pl_module): 
-        logging.info(f"\nTraining epoch ends, training time: {self.time - time.time()}")
+        logging.info(f"\nTraining epoch ends, training time: {time.time() - self.time}")
         self.time = 0
 
 class LightningNetwork(pl.LightningModule):
