@@ -27,8 +27,8 @@ class CustomCallback(pl.Callback):
 class LightningNetwork(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
-        self.params = params
-        self.network = torch.load(params["arch_path"])
+        self.hparams.update(params)
+        self.network = torch.load( self.hparams["arch_path"])
     
     def forward(self, x):
         return self.network.forward(x)
@@ -43,7 +43,7 @@ class LightningNetwork(pl.LightningModule):
         # predictions 
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
-        accuracy = correct / self.params["batch_size"]
+        accuracy = correct / self.hparams["batch_size"]
 
         # loss
         loss = self.cross_entropy_loss(logits, targets)
@@ -57,7 +57,7 @@ class LightningNetwork(pl.LightningModule):
         logits = self.forward(data.float())
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
-        accuracy = correct / self.params["batch_size"]
+        accuracy = correct / self.hparams["batch_size"]
         loss = self.cross_entropy_loss(logits, targets)
 
         logging.info(f"val_accuracy: {accuracy}, val_loss: {loss}")
@@ -73,11 +73,17 @@ class LightningNetwork(pl.LightningModule):
 
     def configure_optimizers(self):
         # TODO: custom optimizer if necessarys
-        optimizer = torch.optim.Adam(
-                        self.network.parameters(),
-                        lr = self.params["lr"],
-                        weight_decay = self.params["weight_decay"]
-                    )
+        # optimizer = torch.optim.Adam(
+        #                 self.network.parameters(),
+        #                 lr = self.params["lr"],
+        #                 weight_decay = self.params["weight_decay"]
+        #             )
+        
+        optimizer = torch.optim.SGD(
+                params = self.network.parameters(),
+                lr = self.hparams["lr"],
+                weight_decay = self.hparams["weight_decay"]
+        )
 
         return optimizer
 
@@ -89,12 +95,16 @@ def get_args():
     # just for once I will download the dataset into the permanent storage.
     parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
     parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
-    parser.add_argument("--batch_size", default=256, type=int, help="Ideally, number of batch_size for DDP is batch_size (of regular 1 gpu case) * #gpus * #nodes. For our case, we scale the regular batch_size * #gpus * 1")
+    parser.add_argument("--batch_size", default=512, type=int, help= "Batch size should be divided by the number of gpus if ddp is enabled")
     parser.add_argument("--epoch", default=1, type=int)
-    parser.add_argument("--lr", default=0.001, type=float)
+    parser.add_argument("--lr", default=10e-5, type=float, help="learning rate should be scaled with the batch size \
+        so that the sample variance of the gradients are approximately constant. \
+        For DDP, it is scaled proportionally to the effective batch size, i.e. batch_size * num_gpus * num_nodes \
+        For example, batch_size = 512, gpus=2, then lr = lr * sqrt(2) \
+        Another suggestion is just use linear scaling from one of the most cited paper for DDP training: https://arxiv.org/abs/1706.02677")
     parser.add_argument("--momentum", default=0.9, type=float)
     parser.add_argument("--num_workers", default=96, type=int)
-    parser.add_argument("--weight_decay", default=0, type=float)
+    parser.add_argument("--weight_decay", default=5e-4, type=float)
     
     # training with GPU settings, including DDP
     parser.add_argument("--ddp", default=False, type=bool, help="Enable 1 node - multiple GPUs training")
@@ -190,8 +200,7 @@ if __name__ == "__main__":
         data_module.setup_validation_data(valid_transform)
         validation_data = data_module.validation_dataLoader(batch_size = batch_size, num_workers=num_workers)
         
-        #data_module.setup_testing_data()
-
+        #data_module.setup_testing_data()        
         # lightning train
         trainer = pl.Trainer(
             devices = args.gpus,
@@ -199,7 +208,7 @@ if __name__ == "__main__":
             max_epochs = args.epoch,
             callbacks =[CustomCallback(), EarlyStopping(monitor="val_acc", mode="min")],
             strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
-            fast_dev_run = args.fast_dev_run
+            fast_dev_run = args.fast_dev_run,
         )
         trainer.fit(network, training_data, validation_data)
     except Exception as e:
