@@ -29,6 +29,7 @@ sh              # for running bash commands in some tests
 torch
 torchmetrics>=0.7.0
 torchvision
+pytorch-lightning
 
 # -------- statistics -------- #
 statsmodels
