@@ -133,3 +133,14 @@ def test_local_optima():
     result2 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 2, 8, 50, number_of_iters)
     assert len(result1[0]) == number_of_iters and result1[1] > 0
     assert len(result2[0]) == number_of_iters and result2[1] > 0
+
+
+architecture_list_sample_test = np.array([
+    [1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,0,0,1,1,1,1],
+    [0,0,0,0,0,0,1,1,1,1],
+    [0,0,0,0,0,0,0,0,0,0]
+])
+def test_architecture_sampling_for_local_optima():
+    assert custom_metrics.find_k_starting_points(architecture_list_sample_test,1) == [1]
+    assert custom_metrics.find_k_starting_points(architecture_list_sample_test, 2) == [1,3]
