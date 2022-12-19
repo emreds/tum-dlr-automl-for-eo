@@ -18,4 +18,4 @@
 cd /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/
 
 # connect interactively to the compute node for experiments
-srun --cpu_bind=none --nodes=1 /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/script_experiments.sh
+srun --cpu_bind=none --nodes=1 /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/script_experiments.sh ./scripts/architectures/arch_0

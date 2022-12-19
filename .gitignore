@@ -161,3 +161,6 @@ reports/*
 
 # architectures
 /scripts/architectures
+
+# Container Image
+mdsi2022-automl-torch1.9_latest.sif
