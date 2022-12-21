@@ -25,7 +25,8 @@ def create_encoded_arc_file():
         encoded_architecture_str = helper_functions.encoded_architecture_to_key(encoded_architecture)
         encoded_to_architecture_dict[encoded_architecture_str] = {
             'module_adjacency': architecture['module_adjacency'].tolist(),
-            'module_operations': architecture['module_operations']
+            'module_operations': architecture['module_operations'],
+            'accuracy': None
         }
     filehandler = open(path_to_save_dictionary, 'wb')
     pickle.dump(encoded_to_architecture_dict, filehandler)

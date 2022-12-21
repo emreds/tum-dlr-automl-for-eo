@@ -42,6 +42,11 @@ def encoded_architecture_to_key(encoded_architecture):
     return key
 
 
+def key_to_encoded_architecture(architecture_key):
+    encoded_arc = [int(elem) for elem in architecture_key]
+    return encoded_arc
+
+
 def rename_ops(ops):
     c1x1 = 0
     c3x3 = 0
