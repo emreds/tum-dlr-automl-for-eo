@@ -1,5 +1,7 @@
 import argparse
 import logging
+import sys
+from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 import torch
 import numpy as np
 
@@ -7,8 +9,9 @@ import torchvision.transforms as transforms
 import torch.nn.functional as F
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning import loggers as pl_loggers
 
-from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
+
 import os
 import time 
 
@@ -49,6 +52,7 @@ class LightningNetwork(pl.LightningModule):
         loss = self.cross_entropy_loss(logits, targets)
 
         logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
+        self.log_dict({"train_acc": accuracy, "train_loss": loss})
 
         return loss
     
@@ -107,9 +111,9 @@ def get_args():
     parser.add_argument("--weight_decay", default=5e-4, type=float)
     
     # training with GPU settings, including DDP
-    parser.add_argument("--ddp", default=False, type=bool, help="Enable 1 node - multiple GPUs training")
-    parser.add_argument("--gpus", default=0, type=int, help="Specify number of gpus used for training, given accelerator is gpu, can be >1 if ddp flag is enabled")
-    parser.add_argument("--accelerator", default=None, type=str, help="Use different devices for training, e.g. gpu")
+    parser.add_argument("--ddp", default=True, type=bool, help="Enable 1 node - multiple GPUs training")
+    parser.add_argument("--gpus", default=4, type=int, help="Specify number of gpus used for training, given accelerator is gpu, can be >1 if ddp flag is enabled")
+    parser.add_argument("--accelerator", default='gpu', type=str, help="Use different devices for training, e.g. gpu")
     parser.add_argument("--fast_dev_run", default=0, type=int, help="Test train/val/test pipeline by running a specific number of batches")
     
     args = parser.parse_args()
@@ -123,6 +127,19 @@ def set_logger(arch_path, result_path):
     
     log_file = arch_path.split('/')[-1] + ".log"
     log_path = os.path.join(result_path, log_file)
+    
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    file_handler = logging.FileHandler(log_path, mode="w", encoding=None, delay=False)
+    
+    #stdout_handler = logging.StreamHandler(sys.stdout)
+    #stdout_handler.setLevel(logging.DEBUG)
+
+    file_handler = logging.FileHandler(log_path, mode="w", encoding=None, delay=False)
+    file_handler.setLevel(logging.DEBUG)
+
+    logging.addHandler(file_handler)
+    #logger.addHandler(stdout_handler)
+    
     logging.basicConfig(filename=log_path, encoding='utf-8', level=logging.DEBUG)
     
     pass
@@ -182,6 +199,9 @@ if __name__ == "__main__":
     data_path = args.data
     arch_path = args.arch
     result_path = args.result
+    tb_logger = pl_loggers.TensorBoardLogger(save_dir=result_path)
+    
+    #set_logger(arch_path, result_path)
     
     try: 
         params = get_params(args)
@@ -209,6 +229,7 @@ if __name__ == "__main__":
             callbacks =[CustomCallback(), EarlyStopping(monitor="val_acc", mode="min")],
             strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
             fast_dev_run = args.fast_dev_run,
+            logger=tb_logger
         )
         trainer.fit(network, training_data, validation_data)
     except Exception as e:
