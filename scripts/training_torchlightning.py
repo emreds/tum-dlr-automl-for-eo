@@ -206,7 +206,7 @@ if __name__ == "__main__":
             devices = args.gpus,
             accelerator = args.accelerator,
             max_epochs = args.epoch,
-            callbacks =[CustomCallback(), EarlyStopping(monitor="val_acc", mode="min")],
+            callbacks =[CustomCallback(), EarlyStopping(monitor="val_acc", mode="max")],
             strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
             fast_dev_run = args.fast_dev_run,
         )
