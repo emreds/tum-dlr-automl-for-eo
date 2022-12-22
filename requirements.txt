@@ -26,16 +26,10 @@ pytorch-lightning==1.5.10
 rich            # beautiful text formatting in terminal
 sh              # for running bash commands in some tests
 # --------- pytorch --------- #
-<<<<<<< Updated upstream
 torch
 torchmetrics>=0.7.0
 torchvision
 pytorch-lightning
-=======
-# torch
-# torchmetrics>=0.7.0
-# torchvision
->>>>>>> Stashed changes
 
 # -------- statistics -------- #
 statsmodels
