@@ -5,7 +5,7 @@ import random
 import sys
 
 import numpy as np
-import helper_acc_list
+from . import helper_acc_list
 
 from src.tum_dlr_automl_for_eo.utils import custom_metrics
 
