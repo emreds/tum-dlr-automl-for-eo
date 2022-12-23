@@ -2,7 +2,8 @@ import math
 import os
 import random
 from datetime import datetime
-from helper_functions import encoded_architecture_to_key, key_to_encoded_architecture
+from tum_dlr_automl_for_eo.utils.helper_functions import encoded_architecture_to_key, key_to_encoded_architecture
+
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
