@@ -122,7 +122,9 @@ def encode_matrix(adj_matrix, ops):
     jy = [trans.get(n) for n in j]
     for p in zip(ix, jy):
         enc_matrix[p] = 1
-    encoded = enc_matrix[np.triu_indices(len(CODING), k=1)]
+    # Flattenning in C (row-major) ording
+    encoded =  enc_matrix.flatten('C')
+    #enc_matrix[np.triu_indices(len(CODING), k=1)]
     return encoded.astype(int)
 
 

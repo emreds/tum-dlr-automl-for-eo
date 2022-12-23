@@ -11,7 +11,7 @@ import logging as log
 #       path to save the nb101_dict file
 
 path_to_read_data = '.../nasbench_full.tfrecord'
-path_to_save_dictionary = ".../tum-dlr-automl-for-eo/data/nb101_dict"
+path_to_save_dictionary = ".../naslib/data/nb101_dict"
 
 data_format = 'tfrecord'  # data format to read
 
@@ -26,7 +26,7 @@ def create_encoded_arc_file():
         encoded_to_architecture_dict[encoded_architecture_str] = {
             'module_adjacency': architecture['module_adjacency'].tolist(),
             'module_operations': architecture['module_operations'],
-            'accuracy': None
+            'accuracy': None # save accuracy as None to calculate later
         }
     filehandler = open(path_to_save_dictionary, 'wb')
     pickle.dump(encoded_to_architecture_dict, filehandler)
