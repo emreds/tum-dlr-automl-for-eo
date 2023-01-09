@@ -2,18 +2,16 @@ import argparse
 import logging
 import torch
 
+from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
+
 import torchvision.transforms as transforms
 import torchvision.datasets as dset
 from pathlib import Path
 import torch.nn.functional as F
 from tqdm import tqdm
 from time import sleep
-import torch
 
-from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 import os
-
-import logging
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -143,9 +141,12 @@ if __name__ == "__main__":
     arch_path = args.arch
     result_path = args.result
     
+    print('IT was able to get the args.')
     try: 
         network = torch.load(arch_path)
+        print('after torch load')
         batch_size = args.batch_size
+        print('after batch size')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_transform, valid_transform = get_data_transforms()
         
