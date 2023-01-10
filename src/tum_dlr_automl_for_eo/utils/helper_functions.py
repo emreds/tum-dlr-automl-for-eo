@@ -6,7 +6,7 @@ Following functions have been modified from https://github.com/kalifou/fitness_l
 
 """
 from naslib.utils import nb101_api as api
-from pyDOE import *
+import pyDOE
 
 # Useful constants
 
@@ -68,7 +68,7 @@ def rename_ops(ops):
 
 
 def sample_single_op(NUM_VERTICES, ALLOWED_OPS):
-    x = lhs(NUM_VERTICES, samples=1)[0]
+    x = pyDOE.lhs(NUM_VERTICES, samples=1)[0]
     vv = np.floor(x * len(ALLOWED_OPS))
     op = [ALLOWED_OPS[int(k)] for k in vv]
     op[0] = INPUT
@@ -79,7 +79,7 @@ def sample_single_op(NUM_VERTICES, ALLOWED_OPS):
 def sample_single_configurations_lhs(N_dimensions):
     sum_edges = 0
     while sum_edges != 9:
-        v_m = lhs(N_dimensions, samples=1)
+        v_m = pyDOE.lhs(N_dimensions, samples=1)
         idx = v_m > 0.5
         v_m[idx == True] = 1
         v_m[idx == False] = 0
