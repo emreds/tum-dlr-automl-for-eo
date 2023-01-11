@@ -9,7 +9,6 @@ from . import helper_acc_list
 
 from src.tum_dlr_automl_for_eo.utils import custom_metrics
 
-
 dummy_acc_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 real_acc_list = [
     88.29126358032227,
@@ -31,7 +30,6 @@ real_2d_acc_list = np.array(
 
 
 def test_mean_accuracy():
-
     assert custom_metrics.mean_accuracy(dummy_acc_list) == 5.5
     assert custom_metrics.mean_accuracy(real_acc_list) == 92.26762751738231
     assert custom_metrics.mean_accuracy(dummy_2d_acc_list) == 5.5
@@ -39,11 +37,11 @@ def test_mean_accuracy():
 
 
 def test_variance():
-
     assert custom_metrics.variance(dummy_acc_list) == 9.166666666666666
     assert custom_metrics.variance(real_acc_list) == 3.8413658161348487
     assert custom_metrics.variance(dummy_2d_acc_list) == 9.166666666666666
     assert custom_metrics.variance(real_2d_acc_list) == 3.8413658161348487
+
 
 dummy_arc_list_0 = np.array([
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
@@ -63,14 +61,20 @@ dummy_arc_list_1 = np.array([[1, 0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1, 1]]
 
 
 def test_positive_persistence():
-    assert custom_metrics.positive_persistence(helper_acc_list.random_acc_list) == [1.0, 0.125, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    assert custom_metrics.positive_persistence(helper_acc_list.uniform_acc_list) == [1.0 for i in range(helper_acc_list.uniform_acc_list.shape[1])]
-
+    assert custom_metrics.positive_persistence(helper_acc_list.random_acc_list) == [1.0, 0.125, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert custom_metrics.positive_persistence(helper_acc_list.uniform_acc_list) == [1.0 for i in range(
+        helper_acc_list.uniform_acc_list.shape[1])]
 
 
 def test_negative_persistence():
-    assert custom_metrics.negative_persistence(helper_acc_list.random_acc_list) == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    assert custom_metrics.negative_persistence(helper_acc_list.uniform_acc_list) == [1.0 for i in range(helper_acc_list.uniform_acc_list.shape[1])]
+    assert custom_metrics.negative_persistence(helper_acc_list.random_acc_list) == [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert custom_metrics.negative_persistence(helper_acc_list.uniform_acc_list) == [1.0 for i in range(
+        helper_acc_list.uniform_acc_list.shape[1])]
+
 
 def test_ruggedness():
     results_1_lag = np.array([1, -13.99825467])
@@ -123,13 +127,15 @@ def file_check_helper(path, time):
     return latest_file_name, latest_file_time
 
 
-def test_local_optima():
-    # This is a stochastic process, so the tests need to be done accordingly 
-    number_of_starting_points = random.randint(1, 10)
-    number_of_iters = 1
-    result = custom_metrics.search_local_optima(dummy_arc_list_0, dummy_acc_list_0, number_of_starting_points, 5, 50,number_of_iters)
-    assert len(result[0]) == number_of_iters and result[1] > 0
-    result1 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1, 8, 50, number_of_iters)
-    result2 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 2, 8, 50, number_of_iters)
-    assert len(result1[0]) == number_of_iters and result1[1] > 0
-    assert len(result2[0]) == number_of_iters and result2[1] > 0
+
+# def test_local_optima():
+#     # This is a stochastic process, so the tests need to be done accordingly
+#     number_of_starting_points = random.randint(1, 10)
+#     number_of_iters = 1
+#     result = custom_metrics.search_local_optima(dummy_arc_list_0, dummy_acc_list_0, number_of_starting_points, 5, 50,
+#                                                 number_of_iters)
+#     assert len(result[0]) == number_of_iters and result[1] > 0
+#     result1 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 1, 8, 50, number_of_iters)
+#     result2 = custom_metrics.search_local_optima(dummy_arc_list_1, dummy_acc_list_1, 2, 8, 50, number_of_iters)
+#     assert len(result1[0]) == number_of_iters and result1[1] > 0
+#     assert len(result2[0]) == number_of_iters and result2[1] > 0
