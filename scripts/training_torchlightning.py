@@ -4,6 +4,7 @@ import sys
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 import torch
 import numpy as np
+import json 
 
 import torchvision.transforms as transforms
 import torch.nn.functional as F
@@ -14,17 +15,17 @@ from pytorch_lightning import loggers as pl_loggers
 
 import os
 import time 
+import logging as lg
+logging = lg.getLogger("lightning")
 
-import logging
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 class CustomCallback(pl.Callback):
     def on_train_epoch_start(self, trainer, pl_module):
-        logging.info("Training epoch starts")
         self.time = time.time()
     
     def on_train_epoch_end(self, trainer, pl_module): 
-        logging.info(f"Training epoch ends, training time: {time.time() - self.time}")
+        train_time = time.time() - self.time
+        self.log("training_time", train_time, sync_dist=True)
         self.time = 0
 
 class LightningNetwork(pl.LightningModule):
@@ -50,10 +51,13 @@ class LightningNetwork(pl.LightningModule):
 
         # loss
         loss = self.cross_entropy_loss(logits, targets)
-
-        logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
-        self.log_dict({"train_acc": accuracy, "train_loss": loss})
-
+        self.log("train_loss", loss, on_epoch=True, sync_dist=True)
+        self.log("train_accuracy", accuracy, on_epoch=True, sync_dist=True)
+        
+        # after aggregating results across GPUs
+        if self.global_rank == 0:
+            logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
+            
         return loss
     
     def validation_step(self, val_batch, batch_idx):
@@ -63,26 +67,17 @@ class LightningNetwork(pl.LightningModule):
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.hparams["batch_size"]
         loss = self.cross_entropy_loss(logits, targets)
-
-        logging.info(f"val_accuracy: {accuracy}, val_loss: {loss}")
-
+        
+        self.log("validation_loss", loss, on_epoch=True, sync_dist=True)
+        self.log("validation_accuracy", accuracy, on_epoch=True, sync_dist=True)
+        
+        # after aggregating results across GPUs
+        if self.global_rank == 0:
+            logging.info(f"validation_accuracy: {accuracy}, validation_loss: {loss}")
+        
         return {"val_loss": loss, "val_acc": accuracy}
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        avg_acc = np.mean([x["val_acc"] for x in outputs])
-        logging.info(f"average val_loss: {avg_loss}, average val_acc: {avg_acc} of epoch {self.current_epoch}")
-        # need this for callback metrics
-        self.log("val_acc", torch.tensor(avg_acc))
-
     def configure_optimizers(self):
-        # TODO: custom optimizer if necessarys
-        # optimizer = torch.optim.Adam(
-        #                 self.network.parameters(),
-        #                 lr = self.params["lr"],
-        #                 weight_decay = self.params["weight_decay"]
-        #             )
-        
         optimizer = torch.optim.SGD(
                 params = self.network.parameters(),
                 lr = self.hparams["lr"],
@@ -194,13 +189,19 @@ def get_params(args):
         "weight_decay": args.weight_decay
     }
 
+def get_trainable_parameters(model):
+    return sum(param.numel() for param in model.parameters() if param.requires_grad)
+
 if __name__ == "__main__":
     args = get_args()
     data_path = args.data
     arch_path = args.arch
     result_path = args.result
-    tb_logger = pl_loggers.TensorBoardLogger(save_dir=result_path)
+    arch_name = "arch_" + arch_path.split("_")[-1]
     
+    # save path = path_to_folder/arch_x/version_y
+    tb_logger = pl_loggers.TensorBoardLogger(save_dir=result_path, name=arch_name)
+    csv_logger = pl_loggers.CSVLogger(save_dir=result_path, name=arch_name)
     #set_logger(arch_path, result_path)
     
     try: 
@@ -226,11 +227,24 @@ if __name__ == "__main__":
             devices = args.gpus,
             accelerator = args.accelerator,
             max_epochs = args.epoch,
-            callbacks =[CustomCallback(), EarlyStopping(monitor="val_acc", mode="max")],
+            callbacks =[CustomCallback()],
             strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
             fast_dev_run = args.fast_dev_run,
-            logger=tb_logger
+            logger=[tb_logger, csv_logger]
         )
         trainer.fit(network, training_data, validation_data)
+        
+        # get number of trainable parameters
+        trainable = get_trainable_parameters(network)
+        with open(f"{result_path}/{arch_name}/arch.json", "w+") as fp:
+            json.dump({
+                "trainable_parameters": trainable,
+                "learning_rate": args.lr,
+                "weight_decay": args.weight_decay,
+                "batch_size": args.batch_size,
+                "epochs": args.epoch,
+                "num_workers": args.num_workers,
+                "gpus": args.gpus
+            },fp)
     except Exception as e:
         logging.error(f"During training some error occured, error: {e}")
