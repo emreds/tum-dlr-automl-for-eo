@@ -32,7 +32,7 @@ class LightningNetwork(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.hparams.update(params)
-        self.network = torch.load( self.hparams["arch_path"])
+        self.network = torch.load(self.hparams["arch_path"])
     
     def forward(self, x):
         return self.network.forward(x)
@@ -115,30 +115,6 @@ def get_args():
     
     return args
 
-def set_logger(arch_path, result_path):
-    '''
-        Defined the log path.
-    '''
-    
-    log_file = arch_path.split('/')[-1] + ".log"
-    log_path = os.path.join(result_path, log_file)
-    
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    file_handler = logging.FileHandler(log_path, mode="w", encoding=None, delay=False)
-    
-    #stdout_handler = logging.StreamHandler(sys.stdout)
-    #stdout_handler.setLevel(logging.DEBUG)
-
-    file_handler = logging.FileHandler(log_path, mode="w", encoding=None, delay=False)
-    file_handler.setLevel(logging.DEBUG)
-
-    logging.addHandler(file_handler)
-    #logger.addHandler(stdout_handler)
-    
-    logging.basicConfig(filename=log_path, encoding='utf-8', level=logging.DEBUG)
-    
-    pass
-
 def get_data_transforms():
     training_data_mean = [
     1.237384229898452759e-01,1.092514395713806152e-01,1.010472476482391357e-01,
@@ -199,10 +175,10 @@ if __name__ == "__main__":
     result_path = args.result
     arch_name = "arch_" + arch_path.split("_")[-1]
     
-    # save path = path_to_folder/arch_x/version_y
+    # NOTE: Using 2 loggers causes an unexpected checkpoint model path.
+    # Example: `result_path/arch_3_arch_3/0_0/checkpoints/epoch=0-step=172.ckpt`.
     tb_logger = pl_loggers.TensorBoardLogger(save_dir=result_path, name=arch_name)
     csv_logger = pl_loggers.CSVLogger(save_dir=result_path, name=arch_name)
-    #set_logger(arch_path, result_path)
     
     try: 
         params = get_params(args)
@@ -220,8 +196,7 @@ if __name__ == "__main__":
 
         data_module.setup_validation_data(valid_transform)
         validation_data = data_module.validation_dataLoader(batch_size = batch_size, num_workers=num_workers)
-        
-        #data_module.setup_testing_data()        
+            
         # lightning train
         trainer = pl.Trainer(
             devices = args.gpus,
@@ -230,7 +205,8 @@ if __name__ == "__main__":
             callbacks =[CustomCallback()],
             strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
             fast_dev_run = args.fast_dev_run,
-            logger=[tb_logger, csv_logger]
+            logger=[tb_logger, csv_logger],
+            default_root_dir=result_path
         )
         trainer.fit(network, training_data, validation_data)
         
