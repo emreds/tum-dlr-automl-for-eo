@@ -7,6 +7,7 @@ Following functions have been modified from https://github.com/kalifou/fitness_l
 """
 from naslib.utils import nb101_api as api
 import pyDOE
+import numpy as np
 
 # Useful constants
 
