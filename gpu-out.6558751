@@ -1,0 +1,105 @@
+device: cuda:0
+device: cpu
+device: cuda:0
+device: cuda:0
+device: cuda:0
+device: cuda:0
+2023-01-21 12:35:37,339 - Data preparation is done, next step is data set-up
+2023-01-21 12:35:37,394 - Number of training data: 352366
+2023-01-21 12:35:37,394 - Number of classes: 17
+2023-01-21 12:35:37,449 - Number of validation data: 24119
+2023-01-21 12:35:37,449 - Number of classes: 17
+2023-01-21 12:35:37,522 - Number of testing data: 24188
+2023-01-21 12:35:37,522 - Number of classes: 17
+device: cuda:0
+device: cpu
+device: cuda:0
+device: cuda:0
+device: cuda:0
+device: cuda:0
+2023-01-21 12:35:41,401 - Data preparation is done, next step is data set-up
+2023-01-21 12:35:41,402 - Number of training data: 352366
+2023-01-21 12:35:41,402 - Number of classes: 17
+2023-01-21 12:35:41,403 - Number of validation data: 24119
+2023-01-21 12:35:41,403 - Number of classes: 17
+2023-01-21 12:35:41,404 - Number of testing data: 24188
+2023-01-21 12:35:41,404 - Number of classes: 17
+device: cuda:0
+device: cpu
+device: cuda:0
+device: cuda:0
+device: cuda:0
+device: cuda:0
+2023-01-21 12:35:48,151 - Data preparation is done, next step is data set-up
+2023-01-21 12:35:48,160 - Number of training data: 352366
+2023-01-21 12:35:48,160 - Number of classes: 17
+2023-01-21 12:35:48,161 - Number of validation data: 24119
+2023-01-21 12:35:48,161 - Number of classes: 17
+2023-01-21 12:35:48,162 - Number of testing data: 24188
+2023-01-21 12:35:48,162 - Number of classes: 17
+2023-01-21 12:35:49,166 - Added key: store_based_barrier_key:1 to store for rank: 2
+2023-01-21 12:35:49,414 - Added key: store_based_barrier_key:1 to store for rank: 1
+device: cuda:0
+device: cpu
+device: cuda:0
+device: cuda:0
+device: cuda:0
+device: cuda:0
+2023-01-21 12:35:49,998 - Data preparation is done, next step is data set-up
+2023-01-21 12:35:49,999 - Number of training data: 352366
+2023-01-21 12:35:49,999 - Number of classes: 17
+2023-01-21 12:35:50,000 - Number of validation data: 24119
+2023-01-21 12:35:50,000 - Number of classes: 17
+2023-01-21 12:35:50,000 - Number of testing data: 24188
+2023-01-21 12:35:50,000 - Number of classes: 17
+2023-01-21 12:35:50,004 - Added key: store_based_barrier_key:1 to store for rank: 3
+2023-01-21 12:35:50,012 - Added key: store_based_barrier_key:1 to store for rank: 0
+2023-01-21 12:35:50,012 - Rank 0: Completed store-based barrier for 4 nodes.
+2023-01-21 12:35:50,017 - Rank 1: Completed store-based barrier for 4 nodes.
+2023-01-21 12:35:50,017 - Rank 3: Completed store-based barrier for 4 nodes.
+2023-01-21 12:35:50,022 - Rank 2: Completed store-based barrier for 4 nodes.
+Validation sanity check: 0it [00:00, ?it/s]Validation sanity check:   0%|          | 0/2 [00:00<?, ?it/s]2023-01-21 12:40:09,731 - validation_accuracy: 0.091796875, validation_avg_accuracy: 0.05882352963089943, validation_loss: -3.824774980545044
+2023-01-21 12:40:12,762 - During training some error occured, error: DeadLock detected from rank: 0 
+ Traceback (most recent call last):
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 685, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 777, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1199, in _run
+    self._dispatch()
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1279, in _dispatch
+    self.training_type_plugin.start_training(self)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/plugins/training_type/training_type_plugin.py", line 202, in start_training
+    self._results = trainer.run_stage()
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1289, in run_stage
+    return self._run_train()
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1311, in _run_train
+    self._run_sanity_check(self.lightning_module)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1375, in _run_sanity_check
+    self._evaluation_loop.run()
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/loops/base.py", line 145, in run
+    self.advance(*args, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/loops/dataloader/evaluation_loop.py", line 110, in advance
+    dl_outputs = self.epoch_loop.run(dataloader, dataloader_idx, dl_max_batches, self.num_dataloaders)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/loops/base.py", line 145, in run
+    self.advance(*args, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/loops/epoch/evaluation_epoch_loop.py", line 122, in advance
+    output = self._evaluation_step(batch, batch_idx, dataloader_idx)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/loops/epoch/evaluation_epoch_loop.py", line 217, in _evaluation_step
+    output = self.trainer.accelerator.validation_step(step_kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/accelerators/accelerator.py", line 239, in validation_step
+    return self.training_type_plugin.validation_step(*step_kwargs.values())
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/plugins/training_type/ddp.py", line 444, in validation_step
+    return self.model(*args, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 1051, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/parallel/distributed.py", line 799, in forward
+    output = self.module(*inputs[0], **kwargs[0])
+  File "/opt/conda/lib/python3.7/site-packages/torch/nn/modules/module.py", line 1051, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/opt/conda/lib/python3.7/site-packages/pytorch_lightning/overrides/base.py", line 92, in forward
+    output = self.module.validation_step(*inputs, **kwargs)
+  File "./scripts/training_torchlightning.py", line 116, in validation_step
+    logging.info(f"This is validation avg_per_cl_acc: {avg_per_cl_acc}")
+NameError: name 'avg_per_cl_acc' is not defined
+

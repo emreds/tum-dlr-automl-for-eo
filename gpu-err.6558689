@@ -1,0 +1,4 @@
++ cd /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/
++ srun /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/script_experiments.sh /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/architectures/arch_9
+cp: cannot stat '/p/project/hai_nasb_eo/data/*h5': No such file or directory
+environment: line 17: /p/software/juwels/lmod/8.7.12/libexec/lmod: No such file or directory

@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
-from torchmetrics.classification import MulticlassConfusionMatrix
+from torchmetrics.classification import MulticlassAccuracy
 
 
 import os
@@ -35,7 +35,8 @@ class LightningNetwork(pl.LightningModule):
         self.hparams.update(params)
         self.network = torch.load(self.hparams["arch_path"])
         self.num_class = 17
-        self.conf_matrix = MulticlassConfusionMatrix(task="multiclass", num_classes=self.num_class)
+        self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class)
+        self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class)
         
     def forward(self, x):
         return self.network.forward(x)
@@ -52,7 +53,7 @@ class LightningNetwork(pl.LightningModule):
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.hparams["batch_size"]
         #avg_acc = self.average_accuracy(targets, predictions)
-        
+        '''
         conf_matrix = self.conf_matrix(predictions, targets)
         avg_per_cl_acc = []
         # For each class extract the average per class accuracy
@@ -63,19 +64,20 @@ class LightningNetwork(pl.LightningModule):
         # average over all classes
         logging.info(f"This is training avg_per_cl_acc: {avg_per_cl_acc}")
         avg_acc = (sum(avg_per_cl_acc) / len(avg_per_cl_acc)) 
-        torch.distributed.reduce(avg_acc, 0, torch.distributed.ReduceOp.SUM)
-        
-        logging.info(f"This is training avg_per_cl_acc: {avg_per_cl_acc}")
-        logging.info(f"This is training avg_acc: {avg_acc}")
+        #torch.distributed.reduce(avg_acc, 0, torch.distributed.ReduceOp.SUM)
+        '''
+        avg_acc = self.train_avg_accuracy(predictions, targets)
+        #
         # loss
         loss = self.cross_entropy_loss(logits, targets)
         self.log("train_loss", loss, on_epoch=True, sync_dist=True)
         self.log("train_accuracy", accuracy, on_epoch=True, sync_dist=True)
-        self.log("train_avg_accuracy", avg_acc, on_epoch=True, sync_dist=True)
+        self.log("train_avg_accuracy", avg_acc, on_epoch=True)
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
             logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
+            logging.info(f"This is training avg_acc: {avg_acc}")
             
         return loss
     
@@ -88,6 +90,7 @@ class LightningNetwork(pl.LightningModule):
         #avg_acc = self.average_accuracy(targets, predictions)
         
         loss = self.cross_entropy_loss(logits, targets)
+        '''
         
         conf_matrix = self.conf_matrix(predictions, targets)
         avg_per_cl_acc = []
@@ -98,18 +101,19 @@ class LightningNetwork(pl.LightningModule):
             avg_per_cl_acc.append(avg_cl_i)
         # average over all classes
         avg_acc = (sum(avg_per_cl_acc) / len(avg_per_cl_acc))
-        torch.distributed.reduce(avg_acc, 0, torch.distributed.ReduceOp.SUM)
+        #torch.distributed.reduce(avg_acc, 0, torch.distributed.ReduceOp.SUM)
+        '''
         
-        logging.info(f"This is validation avg_per_cl_acc: {avg_per_cl_acc}")
-        logging.info(f"This is validation avg_acc: {avg_acc}")
+        avg_acc = self.validation_avg_accuracy(predictions, targets)
         self.log("validation_loss", loss, on_epoch=True, sync_dist=True)
         self.log("validation_accuracy", accuracy, on_epoch=True, sync_dist=True)
-        self.log("validation_avg_accuracy", avg_acc, on_epoch=True, sync_dist=True)
+        self.log("validation_avg_accuracy", avg_acc, on_epoch=True)
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
             logging.info(f"validation_accuracy: {accuracy}, validation_avg_accuracy: {avg_acc}, validation_loss: {loss}")
-            
+            logging.info(f"This is validation avg_acc: {avg_acc}")
+        
         return {"val_loss": loss, "val_acc": accuracy}
 
     def configure_optimizers(self):
@@ -121,34 +125,6 @@ class LightningNetwork(pl.LightningModule):
 
         return optimizer
     
-    def test_step(self, batch, batch_idx):
-        data, targets = batch
-        logits = self.forward(data.float())
-        predictions = logits.argmax(dim=1, keepdim=True).squeeze()
-        
-        return targets, predictions.argmax(dim=-1)
-
-    def test_epoch_end(self, outputs):
-        results = torch.zeros((self.num_class, self.num_class)).to(self.device)
-        for output in outputs:
-            for label, prediction in zip(*output):
-                results[int(label), int(prediction)] += 1
-         
-        torch.distributed.reduce(results, 0, torch.distributed.ReduceOp.SUM)
-        
-        acc = results.diag().sum() / results.sum()
-        avg_per_cl_acc = []
-        for cl_i in range(results.shape[0]):
-            avg_cl_i = results[cl_i][cl_i] / sum(results[cl_i])
-            avg_per_cl_acc.append(avg_cl_i)
-            
-        avg_acc_all = (sum(avg_per_cl_acc) / len(avg_acc_all))
-        logging.info(f"This is test avg_acc_all: {avg_acc_all}")
-        if self.trainer.is_global_zero:
-            logging.info(f"This is test avg_acc_all 2: {avg_acc_all}")
-            self.log("test_accuracy", acc, rank_zero_only=True)
-            self.log("test_avg_accuracy", avg_acc_all, rank_zero_only=True)
-            self.trainer.results = results
     
     def average_accuracy(self, targets, predictions):
         
@@ -292,7 +268,7 @@ if __name__ == "__main__":
             default_root_dir=result_path
         )
         trainer.fit(network, training_data, validation_data)
-        test_results = trainer.test(testing_data)
+        #test_results = trainer.test(testing_data)
         
         # get number of trainable parameters
         trainable = get_trainable_parameters(network)
@@ -307,6 +283,6 @@ if __name__ == "__main__":
                 "gpus": args.gpus
             },fp)
         #test_results = trainer.test(testing_data)
-        print(test_results)
+        #print(test_results)
     except Exception as e:
         logging.error(f"During training some error occured, error: {e}")
