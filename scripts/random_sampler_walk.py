@@ -7,10 +7,11 @@ from naslib.predictors.utils.models import nasbench1_spec
 from naslib.utils import utils
 import torch
 import os
+import json
 # give required paths to read and save files
 
 
-path_to_read_nb101_dict = "/Users/safayilmaz/Desktop/DI LAB/NASLib/naslib/data/nb101_dict"
+path_to_read_nb101_dict = "./nb101_dict"
 number_of_arc_to_sample = 3  # num of archs to sample
 ENCODING_LEN = 289  # fixed encoding length
 NUM_OF_STEPS = 7  # number of steps to walk
@@ -36,6 +37,9 @@ def sample_random_keys(number_of_samples):
     sampled_keys = np.random.choice(keys, size=number_of_samples)
     return sampled_keys
 
+## There should be a global dict which keeps track of all the samples. 
+## We need to add every architecture's key to that dict or set to not train same architecture twice. 
+## Even if it's part of the random walk, the step should be in different direction.
 
 if __name__ == "__main__":
     with open(path_to_read_nb101_dict, 'rb') as f:
