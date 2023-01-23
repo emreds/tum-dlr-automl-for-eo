@@ -1,11 +1,17 @@
 import numpy as np
 import pickle
 
+from naslib.utils import get_dataset_api, utils
+from naslib.predictors.utils.models import nasbench1 as nas101_arch
+from naslib.predictors.utils.models import nasbench1_spec
+from naslib.utils import utils
+import torch
+import os
 # give required paths to read and save files
 
-path_to_save_random_walks = "/Users/safayilmaz/Desktop/DI LAB/NASLib/naslib/data/"
+
 path_to_read_nb101_dict = "/Users/safayilmaz/Desktop/DI LAB/NASLib/naslib/data/nb101_dict"
-number_of_arc_to_sample = 10  # num of archs to sample
+number_of_arc_to_sample = 3  # num of archs to sample
 ENCODING_LEN = 289  # fixed encoding length
 NUM_OF_STEPS = 7  # number of steps to walk
 
@@ -37,14 +43,38 @@ if __name__ == "__main__":
         nb101_dict = pickle.load(f)
 
     random_sampled_keys = sample_random_keys(number_of_samples=number_of_arc_to_sample)
-
-    for index, key in enumerate(random_sampled_keys):
+    config = utils.get_config_from_args(config_type="nas")
+    dataset_api = get_dataset_api(config.search_space, config.dataset)
+    out_channel = {"cifar10": 10, "cifar100": 100, "ImageNet16-120": 120, "So2Sat": 17}
+    input_channel = {"cifar10": 3, "Sentinel-1": 8, "Sentinel-2": 10}
+    os.mkdir("./sampled_points")
+    for sampled_key_index, key in enumerate(random_sampled_keys):
+        os.mkdir("./sampling_" + str(sampled_key_index))
         random_keys = list()
         random_keys.append(key)
         # print('random walk started')
         random_walk_res = random_walk(key)
         # print('random walk completed')
-        random_keys.append(random_walk_res)
-        path = path_to_save_random_walks + "random_walk_" + str(index)
-        filehandler = open(path, 'wb')
+
+        # bring staring points and random walks together
+        random_keys += random_walk_res
+        # save random walk keys
+        sampling_path  = "./sampled_points" + "/random_walk_" + str(sampled_key_index)
+        filehandler = open(sampling_path, 'wb')
         pickle.dump(random_keys, filehandler)
+
+        for random_key_index, random_key in enumerate(random_keys):
+            arch = nb101_dict[random_key]
+
+            spec = nasbench1_spec._ToModelSpec(arch['module_adjacency'], arch['module_operations'])
+            torch_arch = nas101_arch.Network(
+                spec,
+                stem_out=128,
+                stem_in=input_channel["Sentinel-2"],
+                num_stacks=3,
+                num_mods=3,
+                num_classes=out_channel["So2Sat"],
+            )
+            arch_path = "./sampling_" + str(sampled_key_index) + "/arch_" + str(random_key_index)
+            torch.save(torch_arch, arch_path, )
+
