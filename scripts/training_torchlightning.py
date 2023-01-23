@@ -11,6 +11,7 @@ import torch.nn.functional as F
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
+from torchmetrics.classification import MulticlassAccuracy
 
 
 import os
@@ -33,7 +34,10 @@ class LightningNetwork(pl.LightningModule):
         super().__init__()
         self.hparams.update(params)
         self.network = torch.load(self.hparams["arch_path"])
-    
+        self.num_class = 17
+        self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+        self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+
     def forward(self, x):
         return self.network.forward(x)
     
@@ -48,15 +52,16 @@ class LightningNetwork(pl.LightningModule):
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.hparams["batch_size"]
-
+        avg_acc = self.train_avg_accuracy(predictions, targets)
         # loss
         loss = self.cross_entropy_loss(logits, targets)
         self.log("train_loss", loss, on_epoch=True, sync_dist=True)
         self.log("train_accuracy", accuracy, on_epoch=True, sync_dist=True)
+        self.log("train_avg_accuracy", avg_acc, on_epoch=True)
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
-            logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
+            logging.info(f"train_accuracy: {accuracy}, training avg_acc: {avg_acc}, train_loss: {loss}")
             
         return loss
     
@@ -66,17 +71,20 @@ class LightningNetwork(pl.LightningModule):
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.hparams["batch_size"]
+        avg_acc = self.validation_avg_accuracy(predictions, targets)
+        
         loss = self.cross_entropy_loss(logits, targets)
         
         self.log("validation_loss", loss, on_epoch=True, sync_dist=True)
         self.log("validation_accuracy", accuracy, on_epoch=True, sync_dist=True)
+        self.log("validation_avg_accuracy", avg_acc, on_epoch=True)
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
-            logging.info(f"validation_accuracy: {accuracy}, validation_loss: {loss}")
+            logging.info(f"validation_accuracy: {accuracy}, validation_avg_accuracy: {avg_acc}, validation_loss: {loss}")
         
         return {"val_loss": loss, "val_acc": accuracy}
-
+    
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(
                 params = self.network.parameters(),
@@ -85,6 +93,7 @@ class LightningNetwork(pl.LightningModule):
         )
 
         return optimizer
+
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -222,5 +231,6 @@ if __name__ == "__main__":
                 "num_workers": args.num_workers,
                 "gpus": args.gpus
             },fp)
+
     except Exception as e:
         logging.error(f"During training some error occured, error: {e}")
