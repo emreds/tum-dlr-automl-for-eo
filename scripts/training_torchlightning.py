@@ -6,13 +6,13 @@ import torch
 import numpy as np
 import json 
 
+import pytorch_lightning as pl
 import torchvision.transforms as transforms
 import torch.nn.functional as F
 import torch
-import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import loggers as pl_loggers
 from torchmetrics.classification import MulticlassAccuracy
-
 
 import os
 import time 
@@ -104,7 +104,7 @@ def get_args():
     parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
     parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
     parser.add_argument("--batch_size", default=512, type=int, help= "Batch size should be divided by the number of gpus if ddp is enabled")
-    parser.add_argument("--epoch", default=1, type=int)
+    parser.add_argument("--epoch", default=9, type=int)
     parser.add_argument("--lr", default=10e-5, type=float, help="learning rate should be scaled with the batch size \
         so that the sample variance of the gradients are approximately constant. \
         For DDP, it is scaled proportionally to the effective batch size, i.e. batch_size * num_gpus * num_nodes \
@@ -205,13 +205,14 @@ if __name__ == "__main__":
 
         data_module.setup_validation_data(valid_transform)
         validation_data = data_module.validation_dataLoader(batch_size = batch_size, num_workers=num_workers)
-            
+        
+        checkpoint_callback = ModelCheckpoint(every_n_epochs=4)
         # lightning train
         trainer = pl.Trainer(
             devices = args.gpus,
             accelerator = args.accelerator,
             max_epochs = args.epoch,
-            callbacks =[CustomCallback()],
+            callbacks =[CustomCallback(), checkpoint_callback],
             strategy = "ddp_find_unused_parameters_false" if args.ddp else None,
             fast_dev_run = args.fast_dev_run,
             logger=[tb_logger, csv_logger],
