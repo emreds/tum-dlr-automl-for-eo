@@ -37,7 +37,7 @@ class LightningNetwork(pl.LightningModule):
         self.num_class = 17
         self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
         self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
-        
+
     def forward(self, x):
         return self.network.forward(x)
     
@@ -81,10 +81,10 @@ class LightningNetwork(pl.LightningModule):
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
-            logging.info(f"validation_accuracy: {accuracy}, validation_avg_accuracy: {avg_acc}, validation avg_acc: {avg_acc}, validation_loss: {loss}")
+            logging.info(f"validation_accuracy: {accuracy}, validation_avg_accuracy: {avg_acc}, validation_loss: {loss}")
         
         return {"val_loss": loss, "val_acc": accuracy}
-
+    
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(
                 params = self.network.parameters(),
@@ -206,9 +206,6 @@ if __name__ == "__main__":
         data_module.setup_validation_data(valid_transform)
         validation_data = data_module.validation_dataLoader(batch_size = batch_size, num_workers=num_workers)
             
-        data_module.setup_testing_data()
-        testing_data = data_module.testing_dataLoader(batch_size = batch_size, num_workers=num_workers)
-        
         # lightning train
         trainer = pl.Trainer(
             devices = args.gpus,
@@ -221,7 +218,6 @@ if __name__ == "__main__":
             default_root_dir=result_path
         )
         trainer.fit(network, training_data, validation_data)
-        #test_results = trainer.test(testing_data)
         
         # get number of trainable parameters
         trainable = get_trainable_parameters(network)
@@ -235,7 +231,6 @@ if __name__ == "__main__":
                 "num_workers": args.num_workers,
                 "gpus": args.gpus
             },fp)
-        #test_results = trainer.test(testing_data)
-        #print(test_results)
+
     except Exception as e:
         logging.error(f"During training some error occured, error: {e}")
