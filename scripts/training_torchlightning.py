@@ -35,8 +35,8 @@ class LightningNetwork(pl.LightningModule):
         self.hparams.update(params)
         self.network = torch.load(self.hparams["arch_path"])
         self.num_class = 17
-        self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class)
-        self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class)
+        self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+        self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
         
     def forward(self, x):
         return self.network.forward(x)
@@ -52,22 +52,7 @@ class LightningNetwork(pl.LightningModule):
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.hparams["batch_size"]
-        #avg_acc = self.average_accuracy(targets, predictions)
-        '''
-        conf_matrix = self.conf_matrix(predictions, targets)
-        avg_per_cl_acc = []
-        # For each class extract the average per class accuracy
-        for cl_i in range(conf_matrix.shape[0]):
-        # Accuracy class i: ith value on the diagonale, divided by the sum of the value for the ith row
-            avg_cl_i = conf_matrix[cl_i][cl_i] / sum(conf_matrix[cl_i])
-            avg_per_cl_acc.append(avg_cl_i)
-        # average over all classes
-        logging.info(f"This is training avg_per_cl_acc: {avg_per_cl_acc}")
-        avg_acc = (sum(avg_per_cl_acc) / len(avg_per_cl_acc)) 
-        #torch.distributed.reduce(avg_acc, 0, torch.distributed.ReduceOp.SUM)
-        '''
         avg_acc = self.train_avg_accuracy(predictions, targets)
-        #
         # loss
         loss = self.cross_entropy_loss(logits, targets)
         self.log("train_loss", loss, on_epoch=True, sync_dist=True)
@@ -76,8 +61,7 @@ class LightningNetwork(pl.LightningModule):
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
-            logging.info(f"train_accuracy: {accuracy}, train_loss: {loss}")
-            logging.info(f"This is training avg_acc: {avg_acc}")
+            logging.info(f"train_accuracy: {accuracy}, training avg_acc: {avg_acc}, train_loss: {loss}")
             
         return loss
     
@@ -87,32 +71,17 @@ class LightningNetwork(pl.LightningModule):
         predictions = logits.argmax(dim=1, keepdim=True).squeeze()
         correct = (predictions == targets).sum().item()
         accuracy = correct / self.hparams["batch_size"]
-        #avg_acc = self.average_accuracy(targets, predictions)
+        avg_acc = self.validation_avg_accuracy(predictions, targets)
         
         loss = self.cross_entropy_loss(logits, targets)
-        '''
         
-        conf_matrix = self.conf_matrix(predictions, targets)
-        avg_per_cl_acc = []
-        # For each class extract the average per class accuracy
-        for cl_i in range(conf_matrix.shape[0]):
-        # Accuracy class i: ith value on the diagonale, divided by the sum of the value for the ith row
-            avg_cl_i = conf_matrix[cl_i][cl_i] / sum(conf_matrix[cl_i])
-            avg_per_cl_acc.append(avg_cl_i)
-        # average over all classes
-        avg_acc = (sum(avg_per_cl_acc) / len(avg_per_cl_acc))
-        #torch.distributed.reduce(avg_acc, 0, torch.distributed.ReduceOp.SUM)
-        '''
-        
-        avg_acc = self.validation_avg_accuracy(predictions, targets)
         self.log("validation_loss", loss, on_epoch=True, sync_dist=True)
         self.log("validation_accuracy", accuracy, on_epoch=True, sync_dist=True)
         self.log("validation_avg_accuracy", avg_acc, on_epoch=True)
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
-            logging.info(f"validation_accuracy: {accuracy}, validation_avg_accuracy: {avg_acc}, validation_loss: {loss}")
-            logging.info(f"This is validation avg_acc: {avg_acc}")
+            logging.info(f"validation_accuracy: {accuracy}, validation_avg_accuracy: {avg_acc}, validation avg_acc: {avg_acc}, validation_loss: {loss}")
         
         return {"val_loss": loss, "val_acc": accuracy}
 
@@ -124,23 +93,7 @@ class LightningNetwork(pl.LightningModule):
         )
 
         return optimizer
-    
-    
-    def average_accuracy(self, targets, predictions):
-        
-        conf_matrix = self.conf_matrix(predictions, targets)
-        avg_per_cl_acc = []
-        # For each class extract the average per class accuracy
-        for cl_i in range(conf_matrix.shape[0]):
-        # Accuracy class i: ith value on the diagonale, divided by the sum of the value for the ith row
-            avg_cl_i = conf_matrix[cl_i][cl_i] / sum(conf_matrix[cl_i])
-            avg_per_cl_acc.append(avg_cl_i)
-        # average over all classes
-        avg_acc_all = (sum(avg_per_cl_acc) / len(avg_per_cl_acc)) 
-        logging.info(f"This is general avg_acc_all: {avg_acc_all}")
-        
-        return avg_acc_all
-        
+
 
 def get_args():
     parser = argparse.ArgumentParser(

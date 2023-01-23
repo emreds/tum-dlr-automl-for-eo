@@ -1,7 +1,0 @@
-device: cuda:0
-device: cpu
-device: cuda:0
-device: cuda:0
-device: cuda:0
-device: cuda:0
-2023-01-21 12:05:04,153 - During training some error occured, error: name 'MulticlassAccuracy' is not defined
