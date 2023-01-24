@@ -24,6 +24,7 @@ def create_encoded_arc_file():
         encoded_to_architecture_dict[encoded_architecture_str] = {
             'module_adjacency': architecture['module_adjacency'].tolist(),
             'module_operations': architecture['module_operations'],
+            'unique_hash': unique_hash,
             'accuracy': None # save accuracy as None to calculate later
         }
     filehandler = open(path_to_save_dictionary, 'wb')
