@@ -104,7 +104,7 @@ def get_args():
     parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
     parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
     parser.add_argument("--batch_size", default=512, type=int, help= "Batch size should be divided by the number of gpus if ddp is enabled")
-    parser.add_argument("--epoch", default=9, type=int)
+    parser.add_argument("--epoch", default=108, type=int)
     parser.add_argument("--lr", default=10e-5, type=float, help="learning rate should be scaled with the batch size \
         so that the sample variance of the gradients are approximately constant. \
         For DDP, it is scaled proportionally to the effective batch size, i.e. batch_size * num_gpus * num_nodes \
