@@ -55,9 +55,9 @@ class LightningNetwork(pl.LightningModule):
         avg_acc = self.train_avg_accuracy(predictions, targets)
         # loss
         loss = self.cross_entropy_loss(logits, targets)
-        self.log("train_loss", loss, on_epoch=True, sync_dist=True)
-        self.log("train_accuracy", accuracy, on_epoch=True, sync_dist=True)
-        self.log("train_avg_accuracy", avg_acc, on_epoch=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("train_accuracy", accuracy, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("train_avg_accuracy", avg_acc, on_step=False, on_epoch=True)
         
         # after aggregating results across GPUs
         if self.global_rank == 0:
@@ -186,6 +186,7 @@ if __name__ == "__main__":
     
     # NOTE: Using 2 loggers causes an unexpected checkpoint model path.
     # Example: `result_path/arch_3_arch_3/0_0/checkpoints/epoch=0-step=172.ckpt`.
+    # This issue can be solved using `ModelCheckpoint` callback, but for us the saving place is okay.
     tb_logger = pl_loggers.TensorBoardLogger(save_dir=result_path, name=arch_name)
     csv_logger = pl_loggers.CSVLogger(save_dir=result_path, name=arch_name)
     
@@ -206,7 +207,7 @@ if __name__ == "__main__":
         data_module.setup_validation_data(valid_transform)
         validation_data = data_module.validation_dataLoader(batch_size = batch_size, num_workers=num_workers)
         
-        checkpoint_callback = ModelCheckpoint(every_n_epochs=4)
+        checkpoint_callback = ModelCheckpoint(save_top_k=-1, every_n_epochs=2)
         # lightning train
         trainer = pl.Trainer(
             devices = args.gpus,
