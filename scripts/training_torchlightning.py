@@ -13,8 +13,6 @@ import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
 from torchmetrics.classification import MulticlassAccuracy
 
-
-import os
 import time 
 import logging as lg
 logging = lg.getLogger("lightning")
@@ -37,24 +35,23 @@ class LightningNetwork(pl.LightningModule):
         self.num_class = 17
         self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
         self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+        self.overall_accuracy = MulticlassAccuracy(num_classes=self.num_class)
+        self.criterion = torch.nn.CrossEntropyLoss()
 
     def forward(self, x):
         return self.network.forward(x)
-    
-    def cross_entropy_loss(self, logits, labels):
-        return F.nll_loss(logits, labels)
 
     def training_step(self, train_batch, batch_idx):
         data, targets = train_batch 
-        logits = self.forward(data.float())     
+        predictions = self.forward(data.float())
 
-        # predictions 
-        predictions = logits.argmax(dim=1, keepdim=True).squeeze()
-        correct = (predictions == targets).sum().item()
-        accuracy = correct / self.hparams["batch_size"]
-        avg_acc = self.train_avg_accuracy(predictions, targets)
         # loss
-        loss = self.cross_entropy_loss(logits, targets)
+        loss = self.criterion(predictions, targets)
+
+        # accuracies
+        accuracy = self.overall_accuracy(predictions, targets)
+        avg_acc = self.train_avg_accuracy(predictions, targets)
+
         self.log("train_loss", loss, on_epoch=True, sync_dist=True)
         self.log("train_accuracy", accuracy, on_epoch=True, sync_dist=True)
         self.log("train_avg_accuracy", avg_acc, on_epoch=True)
@@ -67,13 +64,14 @@ class LightningNetwork(pl.LightningModule):
     
     def validation_step(self, val_batch, batch_idx):
         data, targets = val_batch 
-        logits = self.forward(data.float())
-        predictions = logits.argmax(dim=1, keepdim=True).squeeze()
-        correct = (predictions == targets).sum().item()
-        accuracy = correct / self.hparams["batch_size"]
-        avg_acc = self.validation_avg_accuracy(predictions, targets)
-        
-        loss = self.cross_entropy_loss(logits, targets)
+        predictions = self.forward(data.float())
+
+        # loss
+        loss = self.criterion(predictions, targets)
+
+        # accuracies
+        accuracy = self.overall_accuracy(predictions, targets)
+        avg_acc = self.train_avg_accuracy(predictions, targets)
         
         self.log("validation_loss", loss, on_epoch=True, sync_dist=True)
         self.log("validation_accuracy", accuracy, on_epoch=True, sync_dist=True)
@@ -111,7 +109,7 @@ def get_args():
         For example, batch_size = 512, gpus=2, then lr = lr * sqrt(2) \
         Another suggestion is just use linear scaling from one of the most cited paper for DDP training: https://arxiv.org/abs/1706.02677")
     parser.add_argument("--momentum", default=0.9, type=float)
-    parser.add_argument("--num_workers", default=96, type=int)
+    parser.add_argument("--num_workers", default=8, type=int)
     parser.add_argument("--weight_decay", default=5e-4, type=float)
     
     # training with GPU settings, including DDP
