@@ -159,6 +159,8 @@ reports/*
 
 # naslib
 **/src/naslib/*
+**/notebooks/src/naslib
+notebooks/nasbench_only108.tfrecord
 
 # architectures
 /scripts/architectures
