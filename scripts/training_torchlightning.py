@@ -33,6 +33,10 @@ class LightningNetwork(pl.LightningModule):
         self.hparams.update(params)
         self.network = torch.load(self.hparams["arch_path"])
         self.num_class = 17
+        # TODO: check again, average='macro' mean compute each class separately, then average them (1 value)
+        # should use average='none' to get accuracies of different classes
+        # TODO: in the file provided by Rene, the way overall accuracy was calculated is actually the behavior
+        # of average='micro'
         self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
         self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
         self.overall_accuracy = MulticlassAccuracy(num_classes=self.num_class)
