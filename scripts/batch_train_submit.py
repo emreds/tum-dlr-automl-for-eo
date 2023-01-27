@@ -9,7 +9,7 @@ FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logging.basicConfig(filename='train_lhc_randomwalk.log', level=logging.DEBUG, format=FORMAT)
 
 ARCHITECTURE_FOLDER = "/p/project/hai_nasb_eo/training/sampled_archs"
-SLURM_SCRIPT_PATH = "./bash_slurm/slurm_job.sh"
+SLURM_SCRIPT_PATH = "/p/project/hai_nasb_eo/emre/scripts/bash_slurm/slurm_job.sh"
 
 
 def get_arch_paths(arch_folder):
@@ -94,8 +94,8 @@ if __name__ == "__main__":
     # We remove the `arch_specs.json` file using `[:-1]`
     arch_paths = sorted([str(path) for path in get_arch_paths(arch_folder)])[:-1]
 
-    # We just take 2 architectures for a trial
-    arch_paths = arch_paths[:2]
+    # We have already trained 2 architectures for a trial
+    arch_paths = arch_paths[2:]
     print(arch_paths)
     
     job_ids = [trigger_job(path) for path in arch_paths]

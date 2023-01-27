@@ -16,6 +16,7 @@ all_archs = set([])
 export_path = "./sampled_archs"
 ENCODING_LEN = 289  # fixed encoding length
 NUM_OF_STEPS = 7 # number of steps to walk
+RANDOM_SEED = 42
 
 def get_nb101():
     with open(path_to_read_nb101_dict, 'rb') as f:
@@ -36,6 +37,7 @@ def random_walk(architecture, max_steps, hamming_distance=2):
     random_flag = 0
     stuck_count = 0
     arch_len = len(all_archs)
+    np.random.seed(RANDOM_SEED)
     while step < max_steps and stuck_count <= ENCODING_LEN:
         rand_nums = np.random.choice(range(0, ENCODING_LEN), size=hamming_distance, replace=False)
         print(f"This is rand_nums: {rand_nums}")

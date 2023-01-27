@@ -28,7 +28,6 @@ def create_encoded_arc_file():
             'accuracy': None # save accuracy as None to calculate later
         }
     filehandler = open(path_to_save_dictionary, 'wb')
-    print(len(encoded_to_architecture_dict.keys()))
     pickle.dump(encoded_to_architecture_dict, filehandler)
 
 
