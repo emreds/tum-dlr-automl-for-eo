@@ -41,8 +41,14 @@ class LightningNetwork(pl.LightningModule):
         # should use average='none' to get accuracies of different classes
         # TODO: in the file provided by Rene, the way overall accuracy was calculated is actually the behavior
         # of average='micro'
-        self.train_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
-        self.validation_avg_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+        self.train_avg_macro_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+        self.train_avg_micro_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='micro')
+        self.train_avg_all_accuracy = MulticlassAccuracy(num_classes=self.num_class, average=None)
+        
+        self.validation_avg_macro_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='macro')
+        self.validation_avg_micro_accuracy = MulticlassAccuracy(num_classes=self.num_class, average='micro')
+        self.validation_avg_all_accuracy = MulticlassAccuracy(num_classes=self.num_class, average=None)
+        
         self.overall_accuracy = MulticlassAccuracy(num_classes=self.num_class)
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -52,12 +58,14 @@ class LightningNetwork(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         data, targets = train_batch 
         predictions = self.forward(data.float())
-
+        
+        # loss
         loss = self.criterion(predictions, targets)
+        
+        # accuracies
         accuracy = self.overall_accuracy(predictions, targets)
         avg_acc = self.train_avg_accuracy(predictions, targets)
 
-        loss = self.cross_entropy_loss(logits, targets)
         self.log("train_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log("train_accuracy", accuracy, on_step=False, on_epoch=True, sync_dist=True)
         self.log("train_avg_accuracy", avg_acc, on_step=False, on_epoch=True)
