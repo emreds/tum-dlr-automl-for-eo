@@ -49,7 +49,7 @@ ARCHITECTURE: {
        
        'trainable_parameters': 3468426}
        
-EMPTY BLOCK: {108: [{
+_ : {108: [{
     'halfway_training_time': 702.2459716796875,
     'halfway_train_accuracy': 0.659254789352417,
     'halfway_validation_accuracy': 0.6333132982254028,
