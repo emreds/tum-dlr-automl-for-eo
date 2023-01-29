@@ -7,7 +7,7 @@
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)   
-#SBATCH --time=12:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=13:00:00          # total run time limit (HH:MM:SS)
 #SBATCH --output=gpu-out.%j
 #SBATCH --error=gpu-err.%j
 
