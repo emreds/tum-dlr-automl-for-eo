@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #SBATCH --account=hai_nasb_eo
-#SBATCH --partition=develbooster # booster or develbooster number of gpus per node
+#SBATCH --partition=booster # booster or develbooster number of gpus per node
 #SBATCH --gres=gpu:4   
 #SBATCH --job-name=eo_nas_training  
 #SBATCH --nodes=1                # node count
