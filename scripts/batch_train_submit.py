@@ -9,7 +9,7 @@ FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logging.basicConfig(filename='train_lhc_randomwalk.log', level=logging.DEBUG, format=FORMAT)
 
 ARCHITECTURE_FOLDER = "/p/project/hai_nasb_eo/training/sampled_archs"
-SLURM_SCRIPT_PATH = "/p/project/hai_nasb_eo/emre/scripts/bash_slurm/slurm_job.sh"
+SLURM_SCRIPT_PATH = "/p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/slurm_job.sh"
 
 
 def get_arch_paths(arch_folder):
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     #job_id = trigger_job(sample)
     #output = get_slurm_output()
     #for row in output:
-    #    if row["JobName"] == "torch-test":
+    #    if row["JobName"] == "eo_nas":
     #        print(row["JobID"])
     #trigger_job(sample)
     with open("./job_ids.json", 'w') as f:

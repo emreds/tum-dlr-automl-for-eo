@@ -11,7 +11,7 @@ import json
 import random
 
 path_to_read_nb101_dict = "../../nb101_dict"
-number_of_arc_to_sample = 100  # num of archs to sample
+number_of_arc_to_sample = 300  # num of archs to sample
 all_archs = set([])
 export_path = "./sampled_archs"
 ENCODING_LEN = 289  # fixed encoding length
