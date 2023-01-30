@@ -148,7 +148,7 @@ def get_args():
     # just for once I will download the dataset into the permanent storage.
     parser.add_argument(
         "--data",
-        default="/p/project/hai_nasb_eo/data",
+        default="/dev/shm/hai_nasb_eo/data",
         help="Path of the training data.",
     )
     parser.add_argument(
