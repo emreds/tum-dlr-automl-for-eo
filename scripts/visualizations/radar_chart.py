@@ -100,17 +100,18 @@ def radar_factory(num_vars, frame='circle'):
     register_projection(RadarAxes)
     return theta
 
-
+limits = [1.0, 0.01, 1.0, 1.0, 1.00, 1.0, 1.0, 1.00]
 data = [
     ['Fitness - Mean', 'Fitness - Variance', 'Negative Persistance - AuC', 'Negative Persistance',
      'Positive Persistance - AuC', 'Positive Persistance', 'Ruggedness', 'Cardinal Of Optima'],
     ('Radar chart', [
-        [getMeanLCZ(), getVarLCZ(), 0.0, 0.0, 0.00, 0.0, 0.0, 0.00],
-        [getMeanCIFAR10(), getVarCIFIAR10(), 0.0, 0.0, 0.00, 0.0, 0.01, 0.00]])
+        [getMeanLCZ(), getVarLCZ()/limits[1], 0.0, 0.0, 0.00, 0.0, 0.0, 0.00],
+        [getMeanCIFAR10(), getVarCIFIAR10()/limits[1], 0.0, 0.0, 0.00, 0.0, 0.0, 0.00]])
 ]
 
 N = len(data[0])
 theta = radar_factory(N, frame='polygon')
+print(theta)
 
 spoke_labels = data.pop(0)
 title, case_data = data[0]
@@ -118,18 +119,22 @@ title, case_data = data[0]
 fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection='radar'))
 fig.subplots_adjust(top=0.85, bottom=0.05)
 
-ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
+
+ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25, 0.5, 0.75, 1],angle=theta[0]*180/np.pi)
+ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[1], 0.5*limits[1], 0.75*limits[1], 1*limits[1]],angle=theta[1]*180/np.pi)
 ax.set_title(title,  position=(0.5, 1.1), ha='center')
 
 colors = ['orange','blue']
 
-so2sat_patch = mpatches.Patch(color='orange', label='So2Sat LCZ42', alpha=1)
-cifar_patch = mpatches.Patch(color='blue', label='CIFAR10', alpha=1)
+
+so2sat_patch = mpatches.Patch(color='orange', label='So2Sat LCZ42', alpha=0.25)
+cifar_patch = mpatches.Patch(color='blue', label='CIFAR10', alpha=0.25)
 plt.legend(handles=[so2sat_patch, cifar_patch])
 
 for i, d in enumerate(case_data):
     line = ax.plot(theta, d,color=colors[i])
     ax.fill(theta, d,  alpha=0.25,facecolor=colors[i])
+    # ax.set_ylim(0, limits[i])
 ax.set_varlabels(spoke_labels)
 
 plt.show()
