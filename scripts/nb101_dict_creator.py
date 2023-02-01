@@ -28,7 +28,6 @@ def create_encoded_arc_file():
             'accuracy': None # save accuracy as None to calculate later
         }
     filehandler = open(path_to_save_dictionary, 'wb')
-    print(len(encoded_to_architecture_dict.keys()))
     pickle.dump(encoded_to_architecture_dict, filehandler)
 
 
@@ -50,7 +49,7 @@ ARCHITECTURE: {
        
        'trainable_parameters': 3468426}
        
-EMPTY BLOCK: {108: [{
+_ : {108: [{
     'halfway_training_time': 702.2459716796875,
     'halfway_train_accuracy': 0.659254789352417,
     'halfway_validation_accuracy': 0.6333132982254028,

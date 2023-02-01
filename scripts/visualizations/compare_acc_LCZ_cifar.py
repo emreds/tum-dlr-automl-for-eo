@@ -90,7 +90,6 @@ val_mean_CIFAR = mean_accuracy(val_accuraciesCifar)
 variance_CIFAR = variance(val_accuraciesCifar)
 # print(val_accuraciesCifar)
 train_accuraciesCifar = getCifarAccuracies(False)
-
 def getMeanLCZ():
     val_accuraciesLCZ = getAccuraciesLCZ(True)
     val_mean_LCZ = mean_accuracy(val_accuraciesLCZ)
