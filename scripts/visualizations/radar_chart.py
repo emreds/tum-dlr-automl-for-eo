@@ -9,7 +9,7 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 import matplotlib.patches as mpatches
 
-from compare_acc_LCZ_cifar import getMeanLCZ, getMeanCIFAR10, getVarLCZ, getVarCIFIAR10
+from compare_acc_LCZ_cifar import getMeanLCZ, getMeanCIFAR10, getVarLCZ, getVarCIFIAR10, getNegativePersistanceAuCLCZ, getNegativePersistanceLCZ, getPositivePersistanceLCZ, getPositivePersistanceAuCLCZ
 
 
 def radar_factory(num_vars, frame='circle'):
@@ -105,7 +105,7 @@ data = [
     ['Fitness - Mean', 'Fitness - Variance', 'Negative Persistance - AuC', 'Negative Persistance',
      'Positive Persistance - AuC', 'Positive Persistance', 'Ruggedness', 'Cardinal Of Optima'],
     ('Radar chart', [
-        [getMeanLCZ(), getVarLCZ()/limits[1], 0.0, 0.0, 0.00, 0.0, 0.0, 0.00],
+        [getMeanLCZ(), getVarLCZ()/limits[1], getNegativePersistanceAuCLCZ(), getNegativePersistanceLCZ(), getPositivePersistanceAuCLCZ(), getPositivePersistanceLCZ(), 0.0, 0.00],
         [getMeanCIFAR10(), getVarCIFIAR10()/limits[1], 0.0, 0.0, 0.00, 0.0, 0.0, 0.00]])
 ]
 

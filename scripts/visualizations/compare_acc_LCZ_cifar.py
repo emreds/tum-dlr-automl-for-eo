@@ -5,7 +5,7 @@ from pkgutil import iter_modules
 import naslib
 from naslib.utils import get_dataset_api, setup_logger, utils
 from naslib.utils import nb101_api as api
-from tum_dlr_automl_for_eo.utils.custom_metrics import mean_accuracy, variance
+from tum_dlr_automl_for_eo.utils.custom_metrics import mean_accuracy, variance, positive_persistence_auc, positive_persistence, negative_persistence_auc, negative_persistence
 import numpy as np
 
 
@@ -37,9 +37,18 @@ def getAccuraciesLCZ(val=False, getLastOnly=True):
             epoch_index = 3
 
             if val==True: # last line train accuracy, before that val
-                last_line = lines[-2]
-                last_line = last_line.split(',')
-                result_list.append(float(last_line[validation_accuracy_index]))
+                if getLastOnly:
+                    last_line = lines[-2]
+                    last_line = last_line.split(',')
+                    result_list.append(float(last_line[validation_accuracy_index]))
+                else:
+                    for i in range(len(lines)):
+                        if i==7 or i==25 or i==73 or i==215:
+                            if i==7:
+                                result_list.append([])
+                            line = lines[i]
+                            line = line.split(',')
+                            result_list[-1].append(float(line[validation_accuracy_index]))
             else:
                 last_line = lines[-1]
                 last_line = last_line.split(',')
@@ -51,7 +60,7 @@ def getAccuraciesLCZ(val=False, getLastOnly=True):
     return result_list
 
 
-def getCifarAccuracies(val=False):
+def getCifarAccuracies(val=False,getLastOnly=True):
     path_to_read_data = '/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_only108.pkl'  # 'nasbench_only108.tfrecord'
     data_format = 'tfrecord'
 
@@ -68,7 +77,9 @@ def getCifarAccuracies(val=False):
                 ops = arch_specs[i]['module_operations']
                 spec = dataset_api["api"].ModelSpec(matrix=matrix, ops=ops)
                 data = nasbench.query(spec)
-                # print(data)
+                fixed_stats, computed_stats = nasbench.get_metrics_from_spec(spec)
+                # print(computed_stats[108][0])
+                # print(computed_stats[12][0])
                 # exit()
                 if val==True:
                     result_list.append(float(data['validation_accuracy']))
@@ -93,26 +104,53 @@ train_accuraciesCifar = getCifarAccuracies(False)
 def getMeanLCZ():
     val_accuraciesLCZ = getAccuraciesLCZ(True)
     val_mean_LCZ = mean_accuracy(val_accuraciesLCZ)
-    print(val_mean_LCZ)
+    print('mean LCZ:', val_mean_LCZ)
     return val_mean_LCZ
 
 def getVarLCZ():
     val_accuraciesLCZ = getAccuraciesLCZ(True)
     variance_LCZ = variance(val_accuraciesLCZ)
-    print(variance_LCZ)
+    print('var LCZ:', variance_LCZ)
     return variance_LCZ
 
 def getMeanCIFAR10():
     val_accuraciesCifar = getCifarAccuracies(True)
     val_mean_CIFAR = mean_accuracy(val_accuraciesCifar)
-    print(val_mean_CIFAR)
+    print('mean CIFAR:', val_mean_CIFAR)
     return val_mean_CIFAR
 
 def getVarCIFIAR10():
     val_accuraciesCifar = getCifarAccuracies(True)
     variance_CIFAR = variance(val_accuraciesCifar)
-    print(variance_CIFAR)
+    print('var CIFAR:', variance_CIFAR)
     return variance_CIFAR
+
+def getPositivePersistanceAuCLCZ():
+    val_accuraciesCifar = getAccuraciesLCZ(True,getLastOnly=False)
+    pos_pers_auc = positive_persistence_auc(np.array(val_accuraciesCifar))
+    print('positive persistance AuC LCZ:', pos_pers_auc)
+    return pos_pers_auc
+
+
+def getPositivePersistanceLCZ():
+    val_accuraciesCifar = getAccuraciesLCZ(True,getLastOnly=False)
+    pos_pers_auc = positive_persistence(np.array(val_accuraciesCifar))
+    print('positive persistance LCZ:', pos_pers_auc)
+    return pos_pers_auc
+
+def getNegativePersistanceAuCLCZ():
+    val_accuraciesCifar = getAccuraciesLCZ(True,getLastOnly=False)
+    pos_pers_auc = negative_persistence_auc(np.array(val_accuraciesCifar))
+    print('Negative persistance AuC LCZ:', pos_pers_auc)
+    return pos_pers_auc
+
+
+def getNegativePersistanceLCZ():
+    val_accuraciesCifar = getAccuraciesLCZ(True,getLastOnly=False)
+    pos_pers_auc = negative_persistence(np.array(val_accuraciesCifar))
+    print('positive persistance AuC LCZ:', pos_pers_auc)
+    return pos_pers_auc
+
 
 
 # print('Mean validation accuracy So2Sat LCZ42: %.2f' % val_mean_LCZ)
