@@ -56,7 +56,7 @@ def radar_factory(num_vars, frame='circle'):
                 line.set_data(x, y)
 
         def set_varlabels(self, labels):
-            self.set_thetagrids(np.degrees(theta), labels)
+            self.set_thetagrids(np.degrees(theta), labels,fontsize=18)
 
         def _gen_axes_patch(self):
             # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
@@ -100,12 +100,12 @@ def radar_factory(num_vars, frame='circle'):
     register_projection(RadarAxes)
     return theta
 
-limits = [1.0, 0.01, 1.0, 1.0, 1.00, 1.0, 1.0, 1.00]
+limits = [1.0, 0.01, 1.0, 0.1, 1.0, 0.1, 1.0, 1.00]
 data = [
     ['Fitness - Mean', 'Fitness - Variance', 'Negative Persistance - AuC', 'Negative Persistance',
      'Positive Persistance - AuC', 'Positive Persistance', 'Ruggedness', 'Cardinal Of Optima'],
     ('Radar chart', [
-        [getMeanLCZ(), getVarLCZ()/limits[1], getNegativePersistanceAuCLCZ(), getNegativePersistanceLCZ(), getPositivePersistanceAuCLCZ(), getPositivePersistanceLCZ(), 0.0, 0.00],
+        [getMeanLCZ(), getVarLCZ()/limits[1], getNegativePersistanceAuCLCZ()/limits[2], getNegativePersistanceLCZ()[1]/limits[3], getPositivePersistanceAuCLCZ()/limits[4], getPositivePersistanceLCZ()[1]/limits[5], 0.0, 0.00],
         [getMeanCIFAR10(), getVarCIFIAR10()/limits[1], 0.0, 0.0, 0.00, 0.0, 0.0, 0.00]])
 ]
 
@@ -120,16 +120,20 @@ fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection='radar'))
 fig.subplots_adjust(top=0.85, bottom=0.05)
 
 
-ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25, 0.5, 0.75, 1],angle=theta[0]*180/np.pi)
-ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[1], 0.5*limits[1], 0.75*limits[1], 1*limits[1]],angle=theta[1]*180/np.pi)
-ax.set_title(title,  position=(0.5, 1.1), ha='center')
+_, _ = plt.rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[0], 0.5*limits[0], 0.75*limits[0], 1*limits[0]],angle=theta[0]*180/np.pi,fontsize=16)
+# _, _ = plt.rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[1], 0.5*limits[1], 0.75*limits[1], 1*limits[1]],angle=theta[1]*180/np.pi,fontsize=16)
+# ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[2], 0.5*limits[2], 0.75*limits[2], 1*limits[2]],angle=theta[2]*180/np.pi)
+# ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[3], 0.5*limits[3], 0.75*limits[3], 1*limits[3]],angle=theta[3]*180/np.pi)
+# ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[4], 0.5*limits[4], 0.75*limits[4], 1*limits[4]],angle=theta[4]*180/np.pi)
+# ax.set_rgrids([0.25, 0.5, 0.75, 1],[0.25*limits[5], 0.5*limits[5], 0.75*limits[5], 1*limits[5]],angle=theta[5]*180/np.pi)
+ax.set_title(title,  position=(0.5, 1.1), ha='center',size=22)
 
 colors = ['orange','blue']
 
 
 so2sat_patch = mpatches.Patch(color='orange', label='So2Sat LCZ42', alpha=0.25)
 cifar_patch = mpatches.Patch(color='blue', label='CIFAR10', alpha=0.25)
-plt.legend(handles=[so2sat_patch, cifar_patch])
+plt.legend(handles=[so2sat_patch, cifar_patch],fontsize=20)
 
 for i, d in enumerate(case_data):
     line = ax.plot(theta, d,color=colors[i])

@@ -61,10 +61,10 @@ def getAccuraciesLCZ(val=False, getLastOnly=True):
 
 
 def getCifarAccuracies(val=False,getLastOnly=True):
-    path_to_read_data = '/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_only108.pkl'  # 'nasbench_only108.tfrecord'
+    path_to_read_data = '/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_only108.pkl'#'/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_full.tfrecord' #nasbench_only108.pkl'  # 'nasbench_only108.tfrecord'
     data_format = 'tfrecord'
 
-    nasbench = api.NASBench(path_to_read_data)
+    nasbench = api.NASBench(path_to_read_data)#,data_format=data_format)
 
     result_list = []
 
