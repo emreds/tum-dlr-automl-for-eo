@@ -10,6 +10,7 @@ from matplotlib.transforms import Affine2D
 import matplotlib.patches as mpatches
 
 from compare_acc_LCZ_cifar import getMeanLCZ, getMeanCIFAR10, getVarLCZ, getVarCIFIAR10, getNegativePersistanceAuCLCZ, getNegativePersistanceLCZ, getPositivePersistanceLCZ, getPositivePersistanceAuCLCZ
+from compare_acc_LCZ_cifar import getPositivePersistanceCIFAR, getNegativePersistanceCIFAR, getPositivePersistanceAuCCIFAR, getNegativePersistanceAuCCIFAR
 
 
 def radar_factory(num_vars, frame='circle'):
@@ -100,13 +101,13 @@ def radar_factory(num_vars, frame='circle'):
     register_projection(RadarAxes)
     return theta
 
-limits = [1.0, 0.01, 1.0, 0.1, 1.0, 0.1, 1.0, 1.00]
+limits = [1.0, 0.01, 1.0, 0.2, 1.0, 0.2, 1.0, 1.00]
 data = [
     ['Fitness - Mean', 'Fitness - Variance', 'Negative Persistance - AuC', 'Negative Persistance',
      'Positive Persistance - AuC', 'Positive Persistance', 'Ruggedness', 'Cardinal Of Optima'],
-    ('Radar chart', [
+    ('Footprint Landscape Analysis', [
         [getMeanLCZ(), getVarLCZ()/limits[1], getNegativePersistanceAuCLCZ()/limits[2], getNegativePersistanceLCZ()[1]/limits[3], getPositivePersistanceAuCLCZ()/limits[4], getPositivePersistanceLCZ()[1]/limits[5], 0.0, 0.00],
-        [getMeanCIFAR10(), getVarCIFIAR10()/limits[1], 0.0, 0.0, 0.00, 0.0, 0.0, 0.00]])
+        [getMeanCIFAR10(), getVarCIFIAR10()/limits[1], getPositivePersistanceAuCCIFAR()/limits[2], getPositivePersistanceCIFAR()[1]/limits[3], getPositivePersistanceAuCCIFAR()/limits[4], getPositivePersistanceCIFAR()[1]/limits[5], 0.0, 0.00]])
 ]
 
 N = len(data[0])

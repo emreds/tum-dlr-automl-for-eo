@@ -61,10 +61,10 @@ def getAccuraciesLCZ(val=False, getLastOnly=True):
 
 
 def getCifarAccuracies(val=False,getLastOnly=True):
-    path_to_read_data = '/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_only108.pkl'#'/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_full.tfrecord' #nasbench_only108.pkl'  # 'nasbench_only108.tfrecord'
+    path_to_read_data = '/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_full.tfrecord'#'/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/notebooks/src/naslib/naslib/data/nasbench_full.tfrecord' #nasbench_only108.pkl'  # 'nasbench_only108.tfrecord'
     data_format = 'tfrecord'
 
-    nasbench = api.NASBench(path_to_read_data)#,data_format=data_format)
+    nasbench = api.NASBench(path_to_read_data,data_format=data_format)
 
     result_list = []
 
@@ -79,8 +79,8 @@ def getCifarAccuracies(val=False,getLastOnly=True):
                 data = nasbench.query(spec)
                 fixed_stats, computed_stats = nasbench.get_metrics_from_spec(spec)
                 # print(computed_stats[108][0])
-                # print(computed_stats[12][0])
-                # exit()
+                print(computed_stats)
+                exit()
                 if val==True:
                     result_list.append(float(data['validation_accuracy']))
                 else:
@@ -92,15 +92,24 @@ def getCifarAccuracies(val=False,getLastOnly=True):
 
 
 
-# print(val_accuraciesLCZ)
+
 # train_accuraciesLCZ = getAccuraciesLCZ(False)
+import pickle
+# with open('evaluated_list_of_architectures.pickle', 'wb') as handle:
+#     pickle.dump(evaluated_list_of_architectures, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 # print(train_accuraciesLCZ)
 
-val_accuraciesCifar = getCifarAccuracies(True)
-val_mean_CIFAR = mean_accuracy(val_accuraciesCifar)
-variance_CIFAR = variance(val_accuraciesCifar)
+# val_accuraciesCifar = getCifarAccuracies(True)
+# val_mean_CIFAR = mean_accuracy(val_accuraciesCifar)
+# variance_CIFAR = variance(val_accuraciesCifar)
 # print(val_accuraciesCifar)
-train_accuraciesCifar = getCifarAccuracies(False)
+# train_accuraciesCifar = getCifarAccuracies(False)
+
+
+with open('/home/strawberry/TUM/DLR/tum-dlr-automl-for-eo/scripts/visualizations/results.pickle', 'rb') as handle:
+    val_accuraciesCIFAR10 = pickle.load(handle)
+
 def getMeanLCZ():
     val_accuraciesLCZ = getAccuraciesLCZ(True)
     val_mean_LCZ = mean_accuracy(val_accuraciesLCZ)
@@ -114,14 +123,14 @@ def getVarLCZ():
     return variance_LCZ
 
 def getMeanCIFAR10():
-    val_accuraciesCifar = getCifarAccuracies(True)
-    val_mean_CIFAR = mean_accuracy(val_accuraciesCifar)
+    val_accuracies = np.array(val_accuraciesCIFAR10)[:,3]
+    val_mean_CIFAR = mean_accuracy(val_accuracies)
     print('mean CIFAR:', val_mean_CIFAR)
     return val_mean_CIFAR
 
 def getVarCIFIAR10():
-    val_accuraciesCifar = getCifarAccuracies(True)
-    variance_CIFAR = variance(val_accuraciesCifar)
+    val_accuracies = np.array(val_accuraciesCIFAR10)[:, 3]
+    variance_CIFAR = variance(val_accuracies)
     print('var CIFAR:', variance_CIFAR)
     return variance_CIFAR
 
@@ -149,6 +158,29 @@ def getNegativePersistanceLCZ():
     val_accuraciesCifar = getAccuraciesLCZ(True,getLastOnly=False)
     pos_pers_auc = negative_persistence(np.array(val_accuraciesCifar))
     print('positive persistance AuC LCZ:', pos_pers_auc)
+    return pos_pers_auc
+
+
+def getPositivePersistanceAuCCIFAR():
+    pos_pers_auc = positive_persistence_auc(np.array(val_accuraciesCIFAR10))
+    print('positive persistance AuC CIFAR:', pos_pers_auc)
+    return pos_pers_auc
+
+
+def getPositivePersistanceCIFAR():
+    pos_pers_auc = positive_persistence(np.array(val_accuraciesCIFAR10))
+    print('positive persistance CIFAR:', pos_pers_auc)
+    return pos_pers_auc
+
+def getNegativePersistanceAuCCIFAR():
+    pos_pers_auc = negative_persistence_auc(np.array(val_accuraciesCIFAR10))
+    print('Negative persistance AuC CIFAR:', pos_pers_auc)
+    return pos_pers_auc
+
+
+def getNegativePersistanceCIFAR():
+    pos_pers_auc = negative_persistence(np.array(val_accuraciesCIFAR10))
+    print('positive persistance AuC CIFAR:', pos_pers_auc)
     return pos_pers_auc
 
 
