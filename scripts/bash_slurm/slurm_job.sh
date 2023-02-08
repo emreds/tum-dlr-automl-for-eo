@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-#SBATCH --account=hai_nasb_eo
+#SBATCH --account=hai_ml4earth
 #SBATCH --partition=booster # booster or develbooster number of gpus per node
 #SBATCH --gres=gpu:4   
 #SBATCH --job-name=eo_nas  
