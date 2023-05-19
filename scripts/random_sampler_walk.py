@@ -1,22 +1,23 @@
-import numpy as np
+import json
+import os
 import pickle
+import random
 
-from naslib.utils import get_dataset_api, utils
+import numpy as np
+import torch
+
 from naslib.predictors.utils.models import nasbench1 as nas101_arch
 from naslib.predictors.utils.models import nasbench1_spec
-from naslib.utils import utils
-import torch
-import os
-import json
-import random
+from naslib.utils import get_dataset_api, utils
 
 path_to_read_nb101_dict = "../../nb101_dict"
 number_of_arc_to_sample = 300  # num of archs to sample
 all_archs = set([])
-export_path = "./sampled_archs"
+export_path = "./sampled_archs_new/"
 ENCODING_LEN = 289  # fixed encoding length
 NUM_OF_STEPS = 7 # number of steps to walk
 RANDOM_SEED = 42
+np.random.seed(RANDOM_SEED)
 
 def get_nb101():
     with open(path_to_read_nb101_dict, 'rb') as f:
@@ -68,6 +69,7 @@ def random_walk(architecture, max_steps, hamming_distance=2):
 
 
 def sample_random_archs(number_of_samples, key_dict):
+    # keys of the nb_dict are binary encodings.
     keys = list(key_dict.keys())
     sampled_keys = np.random.choice(keys, size=number_of_samples, replace=False)
     return sampled_keys
@@ -77,7 +79,7 @@ if __name__ == "__main__":
 
     random_sampled_archs = sample_random_archs(number_of_samples=number_of_arc_to_sample, key_dict=nb101_dict)
     config = utils.get_config_from_args(config_type="nas")
-    dataset_api = get_dataset_api(config.search_space, config.dataset)
+    #dataset_api = get_dataset_api(config.search_space, config.dataset)
     out_channel = {"cifar10": 10, "cifar100": 100, "ImageNet16-120": 120, "So2Sat": 17}
     input_channel = {"cifar10": 3, "Sentinel-1": 8, "Sentinel-2": 10}
     
@@ -102,10 +104,10 @@ if __name__ == "__main__":
             num_classes=out_channel["So2Sat"],
         )
          
-        arch_path = "./sampled_archs/" +  arch_spec["arch_code"]
+        arch_path = export_path +  arch_spec["arch_code"]
         torch.save(torch_arch, arch_path, )
         
         arch_specs.append(arch_spec)
         
-    with open("./sampled_archs/arch_specs.json", 'w') as f:
+    with open(export_path + "/arch_specs.json", 'w') as f:
         f.write(json.dumps(arch_specs, cls=utils.NumpyArrayEncoder))
