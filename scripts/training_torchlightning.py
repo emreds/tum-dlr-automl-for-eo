@@ -1,24 +1,20 @@
 import argparse
-import logging
-import sys
-from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
-import torch
-import numpy as np
 import json
-
-import pytorch_lightning as pl
-import torchvision.transforms as transforms
-import torch.nn.functional as F
-import torch
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning import loggers as pl_loggers
-from torchmetrics.classification import MulticlassAccuracy
-
-
-import os
-
-import time
+import logging
 import logging as lg
+import os
+import sys
+import time
+
+import numpy as np
+import pytorch_lightning as pl
+import torch
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import ModelCheckpoint
+from torchmetrics.classification import MulticlassAccuracy
+from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 
 logging = lg.getLogger("lightning")
 
@@ -39,7 +35,7 @@ class LightningNetwork(pl.LightningModule):
         self.hparams.update(params)
         self.network = torch.load(self.hparams["arch_path"])
         self.num_class = 17
-        # TODO: check again, average='macro' mean compute each class separately, then average them (1 value)
+        # TODO: check again, average='macro' means compute each class separately, then average them (1 value)
         # should use average='none' to get accuracies of different classes
         # TODO: in the file provided by Rene, the way overall accuracy was calculated is actually the behavior
         # of average='micro'
