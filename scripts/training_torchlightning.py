@@ -135,12 +135,12 @@ class LightningNetwork(pl.LightningModule):
         return optimizer
 
 
-def get_args():
+def get_args(require_arch=True):
     parser = argparse.ArgumentParser(
         prog="TUM-DLR-EO training script.",
         description="Trains the given model architecture.",
     )
-    parser.add_argument("--arch", required=True, help="Path of the architecture file.")
+    parser.add_argument("--arch", required=require_arch, help="Path of the architecture file.")
     # just for once I will download the dataset into the permanent storage.
     parser.add_argument(
         "--data",

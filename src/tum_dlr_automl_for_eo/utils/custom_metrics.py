@@ -2,13 +2,15 @@ import math
 import os
 import random
 from datetime import datetime
-from tum_dlr_automl_for_eo.utils.helper_functions import encoded_architecture_to_key, key_to_encoded_architecture
+from random import sample
 
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
-from random import sample
+from torch.utils.data import dataloader
+from tum_dlr_automl_for_eo.utils.helper_functions import (
+    encoded_architecture_to_key, key_to_encoded_architecture)
 
 
 def mean_accuracy(acc_list):
@@ -276,3 +278,31 @@ def get_fig_name(exp_name, **kwargs):
     fig_name += ".png"
 
     return fig_name
+
+def calculate_normal(dataloader: dataloader):
+        # Calculate the mean and standard deviation
+        mean = 0.0
+        std = 0.0
+        total_samples = 0
+
+        for data, _ in dataloader:
+            batch_samples = data.size(0)
+            data = data.view(batch_samples, data.size(1), -1)
+            mean += data.mean(2).sum(0)
+            total_samples += batch_samples
+
+        mean /= total_samples
+        
+        pixel_cnt = 0
+        var = 0
+        for data, _ in dataloader:
+            batch_samples = data.size(0)
+            data = data.view(batch_samples, data.size(1), -1)
+            var += torch.square(data - mean.unsqueeze(1)).sum([0,2])
+            pixel_cnt += data.nelement()
+        
+        std = torch.sqrt(var / pixel_cnt)
+        print("Mean:", mean)
+        print("Std:", std)
+        
+        return mean, std
