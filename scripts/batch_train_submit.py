@@ -1,34 +1,15 @@
 import json
 import logging
-import os
 import subprocess
-
 from pathlib import Path
+
+from tum_dlr_automl_for_eo.utils import file
 
 FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logging.basicConfig(filename='train_lhc_randomwalk.log', level=logging.DEBUG, format=FORMAT)
 
 ARCHITECTURE_FOLDER = "/p/project/hai_nasb_eo/training/sampled_archs"
 SLURM_SCRIPT_PATH = "/p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/slurm_job.sh"
-
-
-def get_arch_paths(arch_folder):
-    """
-    Returns the list of absolute architecture paths.
-
-    Args:
-        arch_folder (Path): Architecture folder.
-
-    Returns:
-        List[Path]: List of architecture paths.
-    """
-    arch_paths = []
-    arch_names = os.listdir(arch_folder)
-
-    for name in arch_names:
-        arch_paths.append(arch_folder / name)
-        
-    return arch_paths
 
 def trigger_job(arch_path):
     """
@@ -92,7 +73,7 @@ if __name__ == "__main__":
     # Cancel all jobs of a user, `scancel -u`
     arch_folder = Path(ARCHITECTURE_FOLDER)
     # We remove the `arch_specs.json` file using `[:-1]`
-    arch_paths = sorted([str(path) for path in get_arch_paths(arch_folder)])[:-1]
+    arch_paths = sorted([str(path) for path in file.get_arch_paths(arch_folder)])[:-1]
 
     # We have already trained 2 architectures for a trial
     arch_paths = arch_paths[2:]

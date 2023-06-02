@@ -1,4 +1,6 @@
 import argparse
+import os
+from pathlib import Path
 
 import numpy as np
 import pytorch_lightning as pl
@@ -7,7 +9,10 @@ import torchvision.transforms as transforms
 from torchmetrics.classification import MulticlassAccuracy
 from training_torchlightning import LightningNetwork
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
+from tum_dlr_automl_for_eo.utils import file
 
+ARCHITECTURE_DIR = "/p/project/hai_nasb_eo/training/sampled_archs"
+LOG_DIR = "/p/project/hai_nasb_eo/training/logs"
 
 def get_params(args):
     return {
@@ -70,16 +75,36 @@ def prepare_test_data():
     Returns:
         test_data
     """
-    test_data_mean = [0.1278, 0.1149, 0.1110, 0.1230, 0.1643, 0.1859, 0.1790, 0.1999, 0.1724,
-        0.1275
-        
+    
+    test_data_mean = [
+        1.278449594974517822e-01,
+        1.149842068552970886e-01,
+        1.111395284533500671e-01,
+        1.232199594378471375e-01,
+        1.645713448524475098e-01,
+        1.862128973007202148e-01,
+        1.792910993099212646e-01,
+        2.002600133419036865e-01,
+        1.727724820375442505e-01,
+        1.278162151575088501e-01
+        ]
+    
+    test_data_std = [
+        3.514893725514411926e-02,
+        4.023178666830062866e-02,
+        5.523603409528732300e-02,
+        5.091508477926254272e-02,
+        6.154564023017883301e-02,
+        7.297030836343765259e-02,
+        7.590688019990921021e-02,
+        8.254054188728332520e-02,
+        8.815932273864746094e-02,
+        8.100783824920654297e-02,
     ]
     
-    test_data_std = [0.0151, 0.0180, 0.0251, 0.0209, 0.0265, 0.0313, 0.0366, 0.0348, 0.0329,
-        0.0313]
-
     data_module = EODataModule(args.data, "Sentinel-2")
     data_module.prepare_data()
+    
     test_transform = transforms.Compose(
         [
             transforms.ToTensor(),
@@ -120,6 +145,8 @@ def calculate_accuracy(model, test_data):
             
             print(f"Micro Accuracy: {micro_acc}")
             print(f"Macro Accuracy: {macro_acc}")
+            
+            print("it is here")
 
 
 def calculate_normal(dataloader):
@@ -132,29 +159,82 @@ def calculate_normal(dataloader):
             batch_samples = data.size(0)
             data = data.view(batch_samples, data.size(1), -1)
             mean += data.mean(2).sum(0)
-            std += data.std(2).sum(0)
             total_samples += batch_samples
 
         mean /= total_samples
-        std /= total_samples
-
+        
+        pixel_cnt = 0
+        var = 0
+        for data, _ in dataloader:
+            batch_samples = data.size(0)
+            data = data.view(batch_samples, data.size(1), -1)
+            var += torch.square(data - mean.unsqueeze(1)).sum([0,2])
+            pixel_cnt += data.nelement()
+        
+        #std /= total_samples
+        std = torch.sqrt(var / pixel_cnt)
         print("Mean:", mean)
         print("Std:", std)
         
         return mean, std
     
-
-if __name__ == "__main__": 
-    torch.device('cpu')
+def get_checkpoints(log_dir: Path, exp_number:str = "0_0", epoch:str ="107"):
     
+    train_logs = os.listdir(log_dir)
+    epoch_prefix = "epoch=" + epoch
+    
+    arch_checkpoint = {}
+    for dir_name in train_logs:
+        word_list = dir_name.split("_")
+        # Network checkpoints are saved in format `arch_x_arch_x`.
+        if len(word_list) > 2:
+            arch_code = word_list[0] + '_' + word_list[1]
+            checkpoint_dir = log_dir / dir_name / "0_0" / "checkpoints"
+            epoch = [epoch_path for epoch_path in os.listdir(checkpoint_dir) if epoch_path.split("-")[0] == epoch_prefix]
+            if epoch:
+                arch_checkpoint[arch_code] = checkpoint_dir / epoch[0]
+            else:
+                continue
+            
+    return arch_checkpoint
+
+
+
+def load_architecture():
     args = get_args()
     params = get_params(args)
+    arch_dir = Path(ARCHITECTURE_DIR)
+    log_dir = Path(LOG_DIR)
+    archs = file.get_arch_paths(arch_dir)
+    arch_checkpoint = get_checkpoints(log_dir)
+    arch_paths = sorted([str(path) for path in archs])[:-1] # we exclude arch_specs.json
+    arch_param = {}
+    for path in arch_paths:
+        arch_code = path.split('/')[-1]
+        if arch_code in arch_checkpoint:
+            checkpoint = arch_checkpoint[arch_code]
+            params["arch_path"] = path
+            arch_param[checkpoint] = {"params": params}
+        
+    return arch_param
+        
+    """
     checkpoint = torch.load("/p/project/hai_nasb_eo/training/logs/arch_269_arch_269/0_0/checkpoints/epoch=107-step=148715.ckpt", map_location=torch.device('cpu'))
     model = LightningNetwork(params)
-    #print(checkpoint.keys())
     model.load_state_dict(checkpoint["state_dict"])
     model.eval()
-    #predictions = torch.tensor([])
-    test_data = prepare_test_data()
-    calculate_accuracy(model, test_data)
+    """
+    
+    pass
+    
+
+if __name__ == "__main__": 
+    #cd torch.device('cpu')
+    
+    model = load_architecture()
+    
+    #print(checkpoint.keys())
+    
+    #test_data = prepare_test_data()
+    #calculate_accuracy(model, test_data)
     
