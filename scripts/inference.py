@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 import torch
 import torchvision.transforms as transforms
 import training_torchlightning
+from ptflops import get_model_complexity_info
 from torchmetrics.classification import MulticlassAccuracy
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 from tum_dlr_automl_for_eo.utils import file
@@ -149,6 +150,8 @@ class TestArch:
         self.arch_size = self.file_size(self.checkpoint_path)
         self.arch = self.load_architecture(self.checkpoint_path, self.params)
         self.num_params = sum(p.numel() for p in self.arch.parameters())
+        self.calculate_FLOPs()
+        self.calculate_accuracy()
         
         
         
@@ -183,7 +186,6 @@ class TestArch:
         all_preds = []
         all_targets = []
         
-    
         if self.device.type == "cuda":
             first_parameter = next(self.arch.parameters())
             dummy_input = torch.randn(first_parameter.size(), dtype=torch.float).to(self.device)
@@ -226,7 +228,7 @@ class TestArch:
         
         return self.accuracy
     
-    def load_architecture(self, checkpoint_path: str, params: dict):
+    def load_architecture(self, checkpoint_path:str, params: dict):
         """
         Loads the architecture from the given checkpoint path.
         Args:
@@ -244,8 +246,23 @@ class TestArch:
         model.load_state_dict(checkpoint["state_dict"])
         model.eval()
         
+        if self.device.type == "cuda":
+            after_mem = torch.cuda.memory_allocated(self.device)
+            self.allocated_memory = after_mem - before_mem
+        
         return model
     
+    def calculate_FLOPs(self):
+        first_parameter = next(self.arch.parameters())
+        
+        
+        macs, params = get_model_complexity_info(self.arch, first_parameter.size(), as_strings=True,
+                                           print_per_layer_stat=True, verbose=True)
+        print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+        print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+        self.FLOPs = params
+        
+        return self.FLOPs
 
 if __name__ == "__main__": 
     #cd torch.device('cpu')
