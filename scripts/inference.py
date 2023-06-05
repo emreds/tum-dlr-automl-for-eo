@@ -7,9 +7,10 @@ import pytorch_lightning as pl
 import torch
 import torchvision.transforms as transforms
 import training_torchlightning
+from thop import clever_format, profile
 from torchmetrics.classification import MulticlassAccuracy
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
-from tum_dlr_automl_for_eo.utils import file, flops_counter
+from tum_dlr_automl_for_eo.utils import file
 
 ARCH_DIR = "/p/project/hai_nasb_eo/training/sampled_archs"
 LOG_DIR = "/p/project/hai_nasb_eo/training/logs"
@@ -120,13 +121,14 @@ class CheckpointParams:
 
 class TestArch:
     
-    def __init__(self, checkpoint_path:str, dataloder:torch.utils.data.DataLoader, params:dict, device=0) -> None:
+    def __init__(self, checkpoint_path:str, dataloder:torch.utils.data.DataLoader, params:dict) -> None:
         self.checkpoint_path = checkpoint_path
         self.params = params
         self.arch = None 
         self.test_data = dataloder
         self.accuracy = {"micro": 0.0, "macro": 0.0}
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f"Device line 130: {self.device}")
         self.get_macro_acc = MulticlassAccuracy(
                 num_classes=17, average="macro"
             )
@@ -139,20 +141,27 @@ class TestArch:
         self.num_params = 0.0
         self.arch_size = 0.0
         self.allocated_memory = 0.0
-        self.FLOPs = 0.0
+        self.macs = 0.0
         self.results = {"accuracy": self.accuracy,
                         "avg_inference_time": self.avg_inference_time,
                         "num_params": self.num_params,
                         "arch_size": self.arch_size, 
-                        "FLOPs": self.FLOPs
+                        "MACs": self.macs,
                         }
         
     def __call__(self):
         self.arch_size = self.file_size(self.checkpoint_path)
         self.arch = self.load_architecture(self.checkpoint_path, self.params)
         self.num_params = sum(p.numel() for p in self.arch.parameters())
-        #self.calculate_FLOPs()
+        self.calculate_macs()
         self.calculate_accuracy()
+        
+        self.results = {"accuracy": self.accuracy,
+                        "avg_inference_time": self.avg_inference_time,
+                        "num_params": self.num_params,
+                        "arch_size": self.arch_size, 
+                        "MACs": self.macs
+                        }
         
         return self.results
 
@@ -185,10 +194,9 @@ class TestArch:
         
         all_preds = []
         all_targets = []
-        
+
         if self.device.type == "cuda":
-            first_parameter = next(self.arch.parameters())
-            dummy_input = torch.randn(first_parameter.size(), dtype=torch.float).to(self.device)
+            dummy_input = torch.randn(torch.Size([64,10,32,32]), dtype=torch.float).to(self.device)
             starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
             repetitions = len(self.test_data)
             timings=np.zeros((repetitions,1))
@@ -245,25 +253,25 @@ class TestArch:
         model = training_torchlightning.LightningNetwork(params)
         model.load_state_dict(checkpoint["state_dict"])
         model.eval()
+        model.to(self.device)
         
         if self.device.type == "cuda":
+            print("It is in line 251")
             after_mem = torch.cuda.memory_allocated(self.device)
             self.allocated_memory = after_mem - before_mem
         
         return model
     
-    def calculate_FLOPs(self):
+    def calculate_macs(self):
         #first_parameter = next(self.arch.parameters())
-        input = torch.randn(10,32,32)       
-        flops_counter.get_model_infos(self.arch, (128, 10, 3, 3))
-        
+        input = torch.randn([64,10,32,32])          
+        macs, params = profile(self.arch, inputs=(input, ))
         #macs, params = profile(model=self.arch, inputs=(input, ))
-        #print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
-        #print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+        macs, params = clever_format([macs, params], "%.3f")
         
-        #self.FLOPs = params
+        self.macs = params
         
-        return self.FLOPs
+        return self.macs
 
 if __name__ == "__main__": 
     #cd torch.device('cpu')
@@ -275,7 +283,7 @@ if __name__ == "__main__":
     print(sample)
     tests = TestArch(sample, test_dataloader, check_param[sample])()
     
-    #print(tests)
+    print(tests)
     #model = load_architecture()
     
     #print(checkpoint.keys())

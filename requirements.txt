@@ -36,6 +36,7 @@ pytorch-lightning
 # -------- statistics -------- #
 statsmodels
 pyDOE           # a library to construct experimental designs, LHS
+thop
 # -------- data -------------- #
 h5py
 monai
