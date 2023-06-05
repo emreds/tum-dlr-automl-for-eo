@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from typing import List, Tuple
 
 import numpy as np
@@ -9,7 +10,8 @@ LOCAL_SEARCH_STEPS = 7
 
 np.random.seed(RANDOM_SEED)
 
-arch_specs_path = "../../../training/sampled_archs/arch_specs.json"
+#arch_specs_path = "../../../training/sampled_archs/arch_specs.json"
+arch_specs_path = "/p/project/hai_nasb_eo/training/sampled_archs/arch_specs.json"
 
 class Arch:
     """
@@ -63,6 +65,26 @@ def is_in_cluster(cluster_bin: str, arch_bin: str) -> bool:
 
     return count <= LOCAL_SEARCH_STEPS
 
+def hamming_distance(bin_enc_1: str, bin_enc_2: str) -> int:
+    """
+    Returns the hamming distance between 2 binary encoded strings.
+
+    Args:
+        bin_enc_1 (str)
+        bin_enc_2 (str)
+
+    Returns:
+        int: Hamming distance.
+    """
+    # Calculate the bitwise difference using XOR
+    diff = int(bin_enc_1, 2) ^ int(bin_enc_2, 2)
+
+    # Count the number of set bits (1s)
+    distance = bin(diff).count("1")
+    # slowride: sum(c1 != c2 for c1, c2 in zip(bin_enc_1, bin_enc_2))
+    return distance
+    
+
 def get_arch_specs() -> List[dict]:
     """
     Reads the arch specs and puts it into a list.
@@ -99,13 +121,14 @@ def get_clusters_archs(raw_archs, cluster_idx) -> Tuple[List[Cluster], List[Arch
     
     return clusters, archs
 
-def match(archs, clusters) -> List[Arch]:
+def match(archs, clusters, cluster_idx) -> List[Arch]:
     """
     Matches the given architectures with the respective clusters.
 
     Args:
         archs (List[Arch])
         clusters (List[Cluster])
+        cluster_idx (Set[String])
 
     Returns:
         List[Arch]: List of architectures with no match.
@@ -126,9 +149,56 @@ def match(archs, clusters) -> List[Arch]:
 
 if __name__ == "__main__":
     raw_archs = get_arch_specs()
-    cluster_idx = set(np.random.randint(0, len(raw_archs), START_SAMPLE_COUNT))
-    clusters, archs = get_clusters_archs(raw_archs=raw_archs, cluster_idx=cluster_idx)
-    no_match = match(archs, clusters=clusters)
-    for cluster in clusters: 
-        print(f"Length of this cluster is {cluster.length}")
-    print(f"There are {len(no_match)} architectures which are not in any cluster")
+    #print(raw_archs)
+    added_archs = set([])
+    arch_diffs = {}
+    for arch in raw_archs:
+        arch_code = arch["arch_code"]
+        arch_diffs[arch_code] = [0, 0, defaultdict(list)]
+        for other_arch in raw_archs:
+            other_arch_code = other_arch["arch_code"] 
+            if arch_code != other_arch_code:
+                dist = hamming_distance(arch["binary_encoded"], other_arch["binary_encoded"])
+                # We check if the hamming distance is lower than 7. 
+                # If the new architecture was not already added as a neighbour to an another architecture. 
+                # We check if there is no neighbour for that distance. So for every distance there is 1 neighbour.
+                if dist <= 7 and other_arch_code not in added_archs and not arch_diffs[arch_code][2][dist]:
+                    new_dist = max(arch_diffs[arch_code][0], dist)
+                    cnt = arch_diffs[arch_code][1] + 1
+                    arch_diffs[arch_code][0] = new_dist
+                    arch_diffs[arch_code][1] = cnt
+                    arch_diffs[arch_code][2][dist].append(other_arch_code)
+                    added_archs.add(other_arch_code)
+    
+    
+
+    max_diff = 0 
+    for val in arch_diffs.values(): 
+        for d_val in val[2].keys(): 
+            if d_val > max_diff:
+                max_diff = d_val
+    #max_diff = max([max(list(val[2].keys()).append(0)) for val in arch_diffs.values()], 0)
+    #print(arch_diffs)
+    
+    roots = []
+    for key, value in arch_diffs.items():
+        # For the architectures that I cannot find more than 4 neighbours. I subtract the number.
+        if len(value[2]) >= max_diff - 3: 
+            roots.append(key)
+            
+    #print(roots)
+    print(f"This is the max diff: {max_diff}")
+    print(f"This is len roots: {len(roots)}")
+    print(arch_diffs[roots[0]])
+    #print(len(arch_diffs.keys()))        
+    #print(roots)
+    #print(arch_diffs['arch_91'])
+    #print(arch_diffs['arch_7'])
+        
+    #cluster_idx = set(np.random.randint(0, len(raw_archs), START_SAMPLE_COUNT))
+    #clusters, archs = get_clusters_archs(raw_archs=raw_archs, cluster_idx=cluster_idx)
+    #no_match = match(archs, clusters=clusters)
+    #for cluster in clusters: 
+    #    print(f"Length of this cluster is {cluster.length}")
+    # print(f"There are {len(no_match)} architectures which are not in any cluster")
+    # print(f"There are {len(no_match)} architectures which are not in any cluster")

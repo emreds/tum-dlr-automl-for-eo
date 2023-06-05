@@ -1,23 +1,19 @@
-import argparse
+import os
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytorch_lightning as pl
 import torch
 import torchvision.transforms as transforms
+import training_torchlightning
 from torchmetrics.classification import MulticlassAccuracy
-from training_torchlightning import LightningNetwork
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
+from tum_dlr_automl_for_eo.utils import file, flops_counter
 
+ARCH_DIR = "/p/project/hai_nasb_eo/training/sampled_archs"
+LOG_DIR = "/p/project/hai_nasb_eo/training/logs"
 
-def get_params(args):
-    return {
-        "arch_path": args.arch,
-        "batch_size": args.batch_size,
-        "lr": args.lr,
-        "momentum": args.momentum,
-        "weight_decay": args.weight_decay
-    }
-    
 def print_model_params(model, limit):
     """
     Testing function to see model params.
@@ -33,53 +29,45 @@ def print_model_params(model, limit):
             break
         print(f"{name}: {param}")
         i += 1
-    
-def get_args():
-    parser = argparse.ArgumentParser(
-                    prog = "TUM-DLR-EO training script.",
-                    description = "Trains the given model architecture.")
-    parser.add_argument("--arch", required=False, help="Path of the architecture file.", default="/p/project/hai_nasb_eo/training/sampled_archs/arch_269")
-    # just for once I will download the dataset into the permanent storage.
-    parser.add_argument("--data", default="/p/project/hai_nasb_eo/data", help="Path of the training data.")
-    parser.add_argument("--result", default="/p/project/hai_nasb_eo/training/logs", help="Path to save training results.")
-    parser.add_argument("--batch_size", default=512, type=int, help= "Batch size should be divided by the number of gpus if ddp is enabled")
-    parser.add_argument("--epoch", default=1, type=int)
-    parser.add_argument("--lr", default=10e-5, type=float, help="learning rate should be scaled with the batch size \
-        so that the sample variance of the gradients are approximately constant. \
-        For DDP, it is scaled proportionally to the effective batch size, i.e. batch_size * num_gpus * num_nodes \
-        For example, batch_size = 512, gpus=2, then lr = lr * sqrt(2) \
-        Another suggestion is just use linear scaling from one of the most cited paper for DDP training: https://arxiv.org/abs/1706.02677")
-    parser.add_argument("--momentum", default=0.9, type=float)
-    parser.add_argument("--num_workers", default=96, type=int)
-    parser.add_argument("--weight_decay", default=5e-4, type=float)
-    
-    # training with GPU settings, including DDP
-    parser.add_argument("--ddp", default=True, type=bool, help="Enable 1 node - multiple GPUs training")
-    parser.add_argument("--gpus", default=4, type=int, help="Specify number of gpus used for training, given accelerator is gpu, can be >1 if ddp flag is enabled")
-    parser.add_argument("--accelerator", default='gpu', type=str, help="Use different devices for training, e.g. gpu")
-    parser.add_argument("--fast_dev_run", default=0, type=int, help="Test train/val/test pipeline by running a specific number of batches")
-    
-    args = parser.parse_args()
-    
-    return args
 
-def prepare_test_data():
+
+def prepare_test_data(data_dir, batch_size, num_workers):
     """
     Prepares the testing data for the inference.
 
     Returns:
         test_data
     """
-    test_data_mean = [0.1278, 0.1149, 0.1110, 0.1230, 0.1643, 0.1859, 0.1790, 0.1999, 0.1724,
-        0.1275
-        
+    
+    test_data_mean = [
+        1.278449594974517822e-01,
+        1.149842068552970886e-01,
+        1.111395284533500671e-01,
+        1.232199594378471375e-01,
+        1.645713448524475098e-01,
+        1.862128973007202148e-01,
+        1.792910993099212646e-01,
+        2.002600133419036865e-01,
+        1.727724820375442505e-01,
+        1.278162151575088501e-01
+        ]
+    
+    test_data_std = [
+        3.514893725514411926e-02,
+        4.023178666830062866e-02,
+        5.523603409528732300e-02,
+        5.091508477926254272e-02,
+        6.154564023017883301e-02,
+        7.297030836343765259e-02,
+        7.590688019990921021e-02,
+        8.254054188728332520e-02,
+        8.815932273864746094e-02,
+        8.100783824920654297e-02,
     ]
     
-    test_data_std = [0.0151, 0.0180, 0.0251, 0.0209, 0.0265, 0.0313, 0.0366, 0.0348, 0.0329,
-        0.0313]
-
-    data_module = EODataModule(args.data, "Sentinel-2")
+    data_module = EODataModule(data_dir, "Sentinel-2")
     data_module.prepare_data()
+    
     test_transform = transforms.Compose(
         [
             transforms.ToTensor(),
@@ -88,73 +76,211 @@ def prepare_test_data():
     )
     data_module.setup_testing_data(test_transform)
     test_data = data_module.testing_dataLoader(
-                batch_size=args.batch_size, num_workers=0
+                batch_size=batch_size, num_workers=num_workers
             )
     
     return test_data
 
-def calculate_accuracy(model, test_data):
+
+    
+
+class CheckpointParams: 
+    def __init__(self, args, arch_dir, log_dir, batch_size, exp_number="0_0", epoch="107"):
+        self.args = args
+        self.batch_size = batch_size
+        self.args.batch_size = self.batch_size
+        self.arch_dir = Path(arch_dir)
+        self.log_dir = Path(log_dir)
         
-        get_macro_acc = MulticlassAccuracy(
+        self.exp_number = exp_number
+        self.epoch = epoch
+        self.base_archs = file.get_base_arch_paths(self.arch_dir)
+        self.checkpoints = file.get_checkpoint_paths(self.log_dir, exp_number, epoch)    
+    
+    
+    def __call__(self):
+        arch_paths = sorted([str(path) for path in self.base_archs])[:-1] # we exclude arch_specs.json
+        check_param = {}
+        for path in arch_paths:
+            arch_code = path.split('/')[-1]
+            if arch_code in self.checkpoints:
+                checkpoint = self.checkpoints[arch_code]
+                check_param[checkpoint] = self.get_params(path)
+            
+        return check_param
+
+    def get_params(self, arch_path:str):
+        return {
+            "arch_path": arch_path,
+            "batch_size": self.batch_size,
+            "lr": self.args.lr,
+            "momentum": self.args.momentum,
+            "weight_decay": self.args.weight_decay
+        }
+
+class TestArch:
+    
+    def __init__(self, checkpoint_path:str, dataloder:torch.utils.data.DataLoader, params:dict, device=0) -> None:
+        self.checkpoint_path = checkpoint_path
+        self.params = params
+        self.arch = None 
+        self.test_data = dataloder
+        self.accuracy = {"micro": 0.0, "macro": 0.0}
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.get_macro_acc = MulticlassAccuracy(
                 num_classes=17, average="macro"
             )
-        get_micro_acc = MulticlassAccuracy(
+        self.get_micro_acc = MulticlassAccuracy(
                 num_classes=17, average="micro"
             )
+        
+        self.avg_inference_time = 0.0
+        self.std_inference_time = 0.0
+        self.num_params = 0.0
+        self.arch_size = 0.0
+        self.allocated_memory = 0.0
+        self.FLOPs = 0.0
+        self.results = {"accuracy": self.accuracy,
+                        "avg_inference_time": self.avg_inference_time,
+                        "num_params": self.num_params,
+                        "arch_size": self.arch_size, 
+                        "FLOPs": self.FLOPs
+                        }
+        
+    def __call__(self):
+        self.arch_size = self.file_size(self.checkpoint_path)
+        self.arch = self.load_architecture(self.checkpoint_path, self.params)
+        self.num_params = sum(p.numel() for p in self.arch.parameters())
+        #self.calculate_FLOPs()
+        self.calculate_accuracy()
+        
+        return self.results
+
+    
+    def file_size(self, file_path, unit='kb'):
+        """
+        Calculates the file size of a given file.
+
+        Args:
+            file_path (_type_): _description_
+            unit (str, optional): Choose one: ['bytes', 'kb', 'mb', 'gb']. Defaults to 'kb'.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        file_size = os.path.getsize(file_path)
+        exponents_map = {'bytes': 0, 'kb': 1, 'mb': 2, 'gb': 3}
+        if unit not in exponents_map:
+            raise ValueError("Must select from \
+            ['bytes', 'kb', 'mb', 'gb']")
+        else:
+            size = file_size / 1024 ** exponents_map[unit]
+            return round(size, 6)
+        
+        
+    def calculate_accuracy(self):
+        
         all_preds = []
         all_targets = []
         
-        with torch.no_grad():
-            for images, targets in test_data: 
-                outputs = model(images.float())
-                values, preds = outputs.max(1)
+        if self.device.type == "cuda":
+            first_parameter = next(self.arch.parameters())
+            dummy_input = torch.randn(first_parameter.size(), dtype=torch.float).to(self.device)
+            starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+            repetitions = len(self.test_data)
+            timings=np.zeros((repetitions,1))
+            #GPU-WARM-UP
+            for _ in range(10):
+                _ = self.arch(dummy_input)
+            
+            with torch.no_grad():
+                i = 0
+                for images, targets in self.test_data: 
+                    starter.record()
+                    outputs = self.arch(images.float())
+                    ender.record()
+                    
+                    # WAIT FOR GPU SYNC
+                    torch.cuda.synchronize()
+                    curr_time = starter.elapsed_time(ender)
+                    timings[i] = curr_time
+                    i += 1
+                    values, preds = outputs.max(1)
+                    all_preds.append(preds)
+                    all_targets.append(targets)
+
+                all_preds = torch.cat(all_preds)
+                all_targets = torch.cat(all_targets)
                 
-                all_preds.append(preds)
-                all_targets.append(targets)
-
-            all_preds = torch.cat(all_preds)
-            all_targets = torch.cat(all_targets)
+                self.accuracy["micro"] = self.get_micro_acc(all_preds, all_targets)
+                self.accuracy["macro"] = self.get_macro_acc(all_preds, all_targets)
             
-            micro_acc = get_micro_acc(all_preds, all_targets)
-            macro_acc = get_macro_acc(all_preds, all_targets)
+            self.avg_inference_time = np.sum(timings) / repetitions
+            self.std_inference_time = np.std(timings)
             
-            print(f"Micro Accuracy: {micro_acc}")
-            print(f"Macro Accuracy: {macro_acc}")
-
-
-def calculate_normal(dataloader):
-        # Calculate the mean and standard deviation
-        mean = 0.0
-        std = 0.0
-        total_samples = 0
-
-        for data, _ in dataloader:
-            batch_samples = data.size(0)
-            data = data.view(batch_samples, data.size(1), -1)
-            mean += data.mean(2).sum(0)
-            std += data.std(2).sum(0)
-            total_samples += batch_samples
-
-        mean /= total_samples
-        std /= total_samples
-
-        print("Mean:", mean)
-        print("Std:", std)
+            #print(f"Micro Accuracy: {micro_acc}")
+            #print(f"Macro Accuracy: {macro_acc}")
+            
+            #print("it is here")
         
-        return mean, std
+        return self.accuracy
     
+    def load_architecture(self, checkpoint_path:str, params: dict):
+        """
+        Loads the architecture from the given checkpoint path.
+        Args:
+            checkpoint_path: Path to the checkpoint.
+            params: Parameters for the architecture.
+
+        Returns:
+            model: The architecture.
+        """
+        if self.device.type == "cuda":
+            before_mem = torch.cuda.memory_allocated(self.device)
+            
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        model = training_torchlightning.LightningNetwork(params)
+        model.load_state_dict(checkpoint["state_dict"])
+        model.eval()
+        
+        if self.device.type == "cuda":
+            after_mem = torch.cuda.memory_allocated(self.device)
+            self.allocated_memory = after_mem - before_mem
+        
+        return model
+    
+    def calculate_FLOPs(self):
+        #first_parameter = next(self.arch.parameters())
+        input = torch.randn(10,32,32)       
+        flops_counter.get_model_infos(self.arch, (128, 10, 3, 3))
+        
+        #macs, params = profile(model=self.arch, inputs=(input, ))
+        #print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+        #print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+        
+        #self.FLOPs = params
+        
+        return self.FLOPs
 
 if __name__ == "__main__": 
-    torch.device('cpu')
+    #cd torch.device('cpu')
+    args = training_torchlightning.get_args(require_arch=False)
+    test_dataloader = prepare_test_data(args.data, args.batch_size, num_workers=0)
+    check_param = CheckpointParams(args=args, arch_dir=ARCH_DIR, log_dir=LOG_DIR, batch_size=args.batch_size, exp_number="0_0", epoch="107")
+    check_param = check_param()
+    sample = list(check_param.keys())[0]
+    print(sample)
+    tests = TestArch(sample, test_dataloader, check_param[sample])()
     
-    args = get_args()
-    params = get_params(args)
-    checkpoint = torch.load("/p/project/hai_nasb_eo/training/logs/arch_269_arch_269/0_0/checkpoints/epoch=107-step=148715.ckpt", map_location=torch.device('cpu'))
-    model = LightningNetwork(params)
+    #print(tests)
+    #model = load_architecture()
+    
     #print(checkpoint.keys())
-    model.load_state_dict(checkpoint["state_dict"])
-    model.eval()
-    #predictions = torch.tensor([])
-    test_data = prepare_test_data()
-    calculate_accuracy(model, test_data)
+    
+    #
+    #calculate_accuracy(model, test_data)
+        #calculate_accuracy(model, test_data)
     
