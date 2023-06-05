@@ -7,10 +7,9 @@ import pytorch_lightning as pl
 import torch
 import torchvision.transforms as transforms
 import training_torchlightning
-from ptflops import get_model_complexity_info
 from torchmetrics.classification import MulticlassAccuracy
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
-from tum_dlr_automl_for_eo.utils import file
+from tum_dlr_automl_for_eo.utils import file, flops_counter
 
 ARCH_DIR = "/p/project/hai_nasb_eo/training/sampled_archs"
 LOG_DIR = "/p/project/hai_nasb_eo/training/logs"
@@ -90,7 +89,6 @@ class CheckpointParams:
         self.args = args
         self.batch_size = batch_size
         self.args.batch_size = self.batch_size
-        self.params = self.get_params()
         self.arch_dir = Path(arch_dir)
         self.log_dir = Path(log_dir)
         
@@ -107,14 +105,13 @@ class CheckpointParams:
             arch_code = path.split('/')[-1]
             if arch_code in self.checkpoints:
                 checkpoint = self.checkpoints[arch_code]
-                self.params["arch_path"] = path
-                check_param[checkpoint] = {"params": self.params}
+                check_param[checkpoint] = self.get_params(path)
             
         return check_param
 
-    def get_params(self):
+    def get_params(self, arch_path:str):
         return {
-            "arch_path": self.args.arch,
+            "arch_path": arch_path,
             "batch_size": self.batch_size,
             "lr": self.args.lr,
             "momentum": self.args.momentum,
@@ -123,10 +120,9 @@ class CheckpointParams:
 
 class TestArch:
     
-    def __init__(self, checkpoint_path:str, dataloder:torch.utils.data.DataLoader, params:dict, tests:dict, device=0) -> None:
+    def __init__(self, checkpoint_path:str, dataloder:torch.utils.data.DataLoader, params:dict, device=0) -> None:
         self.checkpoint_path = checkpoint_path
         self.params = params
-        self.tests = tests
         self.arch = None 
         self.test_data = dataloder
         self.accuracy = {"micro": 0.0, "macro": 0.0}
@@ -144,20 +140,24 @@ class TestArch:
         self.arch_size = 0.0
         self.allocated_memory = 0.0
         self.FLOPs = 0.0
-        self.results = {"accuracy": self.accuracy, "avg_inference_time": self.avg_inference_time, "num_params": self.num_params, "arch_size": self.arch_size}
+        self.results = {"accuracy": self.accuracy,
+                        "avg_inference_time": self.avg_inference_time,
+                        "num_params": self.num_params,
+                        "arch_size": self.arch_size, 
+                        "FLOPs": self.FLOPs
+                        }
         
     def __call__(self):
         self.arch_size = self.file_size(self.checkpoint_path)
         self.arch = self.load_architecture(self.checkpoint_path, self.params)
         self.num_params = sum(p.numel() for p in self.arch.parameters())
-        self.calculate_FLOPs()
+        #self.calculate_FLOPs()
         self.calculate_accuracy()
         
-        
-        
-        pass
+        return self.results
+
     
-    def file_size(file_path, unit='kb'):
+    def file_size(self, file_path, unit='kb'):
         """
         Calculates the file size of a given file.
 
@@ -241,7 +241,7 @@ class TestArch:
         if self.device.type == "cuda":
             before_mem = torch.cuda.memory_allocated(self.device)
             
-        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
         model = training_torchlightning.LightningNetwork(params)
         model.load_state_dict(checkpoint["state_dict"])
         model.eval()
@@ -253,27 +253,34 @@ class TestArch:
         return model
     
     def calculate_FLOPs(self):
-        first_parameter = next(self.arch.parameters())
+        #first_parameter = next(self.arch.parameters())
+        input = torch.randn(10,32,32)       
+        flops_counter.get_model_infos(self.arch, (128, 10, 3, 3))
         
+        #macs, params = profile(model=self.arch, inputs=(input, ))
+        #print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+        #print('{:<30}  {:<8}'.format('Number of parameters: ', params))
         
-        macs, params = get_model_complexity_info(self.arch, first_parameter.size(), as_strings=True,
-                                           print_per_layer_stat=True, verbose=True)
-        print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
-        print('{:<30}  {:<8}'.format('Number of parameters: ', params))
-        self.FLOPs = params
+        #self.FLOPs = params
         
         return self.FLOPs
 
 if __name__ == "__main__": 
     #cd torch.device('cpu')
     args = training_torchlightning.get_args(require_arch=False)
+    test_dataloader = prepare_test_data(args.data, args.batch_size, num_workers=0)
     check_param = CheckpointParams(args=args, arch_dir=ARCH_DIR, log_dir=LOG_DIR, batch_size=args.batch_size, exp_number="0_0", epoch="107")
-    print(check_param())
+    check_param = check_param()
+    sample = list(check_param.keys())[0]
+    print(sample)
+    tests = TestArch(sample, test_dataloader, check_param[sample])()
+    
+    #print(tests)
     #model = load_architecture()
     
     #print(checkpoint.keys())
     
-    #test_data = prepare_test_data()
+    #
     #calculate_accuracy(model, test_data)
         #calculate_accuracy(model, test_data)
     

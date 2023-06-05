@@ -4,7 +4,7 @@
 mkdir -p /dev/shm/hai_nasb_eo/data
 
 # Copy the data to the target storage directory, if it exists doesn't copies it.
-cp -r -n /p/project/hai_nasb_eo/data/* /dev/shm/hai_nasb_eo/data
+cp -r -n /p/project/hai_nasb_eo/data/* /dev/shm/hai_nasb_eo/
 
 # Run the container with support for nvidia and cuda
 module load Stages/2022  Apptainer-Tools/2022 GCCcore/.9.3.0
