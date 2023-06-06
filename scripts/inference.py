@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -106,7 +107,7 @@ class CheckpointParams:
             arch_code = path.split('/')[-1]
             if arch_code in self.checkpoints:
                 checkpoint = self.checkpoints[arch_code]
-                check_param[checkpoint] = self.get_params(path)
+                check_param[checkpoint] = {"params": self.get_params(path), "arch_code": arch_code}
             
         return check_param
 
@@ -128,13 +129,13 @@ class TestArch:
         self.test_data = dataloder
         self.accuracy = {"micro": 0.0, "macro": 0.0}
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"Device line 130: {self.device}")
+        
         self.get_macro_acc = MulticlassAccuracy(
                 num_classes=17, average="macro"
-            )
+            ).to(self.device)
         self.get_micro_acc = MulticlassAccuracy(
                 num_classes=17, average="micro"
-            )
+            ).to(self.device)
         
         self.avg_inference_time = 0.0
         self.std_inference_time = 0.0
@@ -158,6 +159,7 @@ class TestArch:
         
         self.results = {"accuracy": self.accuracy,
                         "avg_inference_time": self.avg_inference_time,
+                        "std_inference_time": self.std_inference_time,
                         "num_params": self.num_params,
                         "arch_size": self.arch_size, 
                         "MACs": self.macs
@@ -208,7 +210,7 @@ class TestArch:
                 i = 0
                 for images, targets in self.test_data: 
                     starter.record()
-                    outputs = self.arch(images.float())
+                    outputs = self.arch(images.float().to(self.device))
                     ender.record()
                     
                     # WAIT FOR GPU SYNC
@@ -220,20 +222,15 @@ class TestArch:
                     all_preds.append(preds)
                     all_targets.append(targets)
 
-                all_preds = torch.cat(all_preds)
-                all_targets = torch.cat(all_targets)
+                all_preds = torch.cat(all_preds).to(self.device)
+                all_targets = torch.cat(all_targets).to(self.device)
                 
-                self.accuracy["micro"] = self.get_micro_acc(all_preds, all_targets)
-                self.accuracy["macro"] = self.get_macro_acc(all_preds, all_targets)
+                self.accuracy["micro"] = self.get_micro_acc(all_preds, all_targets).cpu().tolist()
+                self.accuracy["macro"] = self.get_macro_acc(all_preds, all_targets).cpu().tolist()
             
             self.avg_inference_time = np.sum(timings) / repetitions
             self.std_inference_time = np.std(timings)
             
-            #print(f"Micro Accuracy: {micro_acc}")
-            #print(f"Macro Accuracy: {macro_acc}")
-            
-            #print("it is here")
-        
         return self.accuracy
     
     def load_architecture(self, checkpoint_path:str, params: dict):
@@ -256,17 +253,14 @@ class TestArch:
         model.to(self.device)
         
         if self.device.type == "cuda":
-            print("It is in line 251")
             after_mem = torch.cuda.memory_allocated(self.device)
             self.allocated_memory = after_mem - before_mem
         
         return model
     
     def calculate_macs(self):
-        #first_parameter = next(self.arch.parameters())
-        input = torch.randn([64,10,32,32])          
-        macs, params = profile(self.arch, inputs=(input, ))
-        #macs, params = profile(model=self.arch, inputs=(input, ))
+        input = torch.randn([64,10,32,32]).to(self.device)          
+        macs, params = profile(self.arch, inputs=(input, ), verbose=False)
         macs, params = clever_format([macs, params], "%.3f")
         
         self.macs = params
@@ -274,21 +268,19 @@ class TestArch:
         return self.macs
 
 if __name__ == "__main__": 
-    #cd torch.device('cpu')
     args = training_torchlightning.get_args(require_arch=False)
     test_dataloader = prepare_test_data(args.data, args.batch_size, num_workers=0)
     check_param = CheckpointParams(args=args, arch_dir=ARCH_DIR, log_dir=LOG_DIR, batch_size=args.batch_size, exp_number="0_0", epoch="107")
     check_param = check_param()
-    sample = list(check_param.keys())[0]
-    print(sample)
-    tests = TestArch(sample, test_dataloader, check_param[sample])()
+
+    results = {}
     
-    print(tests)
-    #model = load_architecture()
+    for arch in check_param:
+        tests = TestArch(arch, test_dataloader, check_param[arch]["params"])()
+        tests["checkpoint_path"] = arch
+        results[check_param[arch]["arch_code"]] = tests
+        print(results)
     
-    #print(checkpoint.keys())
-    
-    #
-    #calculate_accuracy(model, test_data)
-        #calculate_accuracy(model, test_data)
+    with open("./test_results_all.json", "w") as f:
+        json.dump(results, f)
     
