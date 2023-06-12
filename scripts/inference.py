@@ -279,8 +279,8 @@ if __name__ == "__main__":
         tests = TestArch(arch, test_dataloader, check_param[arch]["params"])()
         tests["checkpoint_path"] = arch
         results[check_param[arch]["arch_code"]] = tests
-        print(results)
-    
+        
+    print(results)
     with open("./test_results_all.json", "w") as f:
         json.dump(results, f)
     
