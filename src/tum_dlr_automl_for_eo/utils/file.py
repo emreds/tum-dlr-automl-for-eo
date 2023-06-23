@@ -1,4 +1,5 @@
 import os
+import pickle
 from pathlib import Path
 
 
@@ -50,3 +51,9 @@ def get_checkpoint_paths(log_dir, exp_number="0_0", epoch="107") -> dict:
                 continue
             
     return arch_checkpoint
+
+def load_pickle(file_path):
+    with open(file_path, "rb") as f:
+        pickle_data = pickle.load(f)
+
+    return pickle_data
