@@ -3,7 +3,7 @@ from data_mapper import NB101Mapper
 from encode_matrix import ArchitectureEncoder
 from tum_dlr_automl_for_eo.utils import file
 from dist_calculator import calculate_sample_pairwise_dist
-
+from collect_existing_archs import CollectTrainedArchs
 
 
 class PathSampler:
@@ -48,7 +48,7 @@ class PathSampler:
 
         return paths
     
-def path_refiner(paths, reqired_len):
+def path_refiner(paths, required_len):
     '''
     Filters the number of paths to get the paths with most trained architecture.
     '''
@@ -56,7 +56,9 @@ def path_refiner(paths, reqired_len):
     for arch_id, val in path_trained_cnt.items():
         if val > 0  and arch_id not in no_pick_samples: 
             zeros += 1
-    
+            
+    print(zeros)
+    pass
     
     
 if __name__ == "__main__":
@@ -64,10 +66,16 @@ if __name__ == "__main__":
     nb101_dict = file.load_pickle("/p/project/hai_nasb_eo/emre/arch_matrix/nb101_dict")
     nb101_mapper = NB101Mapper(nb101_dict)
     nb101_mapper.map_data()
+    hash_arch_array = nb101_mapper.hash_arch_array
     # The part below is not necessary for everyone, we had some already trained architectures and we are going to sample 
     # the starting points from those already trained architectures.
-    all_existing_archs = get_json_file("./arch_specs.json")
-    sequences = get_json_file("./sequences.json")
-    trained_archs = get_json_file("./test_results_all.json")
+    all_samples_path = "../../../../arch_matrix/arch_specs.json"
+    sequences_path = "../../../../arch_matrix/sequences.json"
+    test_results_path = "../../../../arch_matrix/test_results_all.json"
     # We have made some trials and those no pick samples goes a shorter way.
     no_pick_samples = set([23596, 150491, 191805, 221281, 309560, 342022, 350831])
+    collect_archs = CollectTrainedArchs(all_samples_path, sequences_path, test_results_path)
+    trained_ids = collect_archs.get_trained_ids(hash_arch_array)
+    starting_ids = collect_archs.get_starting_ids(hash_arch_array)
+    
+    
