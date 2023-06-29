@@ -14,6 +14,7 @@ class NB101Mapper:
         self.encoder = ArchitectureEncoder()
         self.hash_arch_matrix = {}
         self.hash_to_id = {}
+        self.id_to_hash = {}
         self.arch_keys = []
         self.hash_arch_array = np.array([])
     
@@ -31,6 +32,7 @@ class NB101Mapper:
             
         for idx, hash_code in enumerate(self.hash_arch_matrix.keys()):
             self.hash_to_id[hash_code] = idx
+            self.id_to_hash[idx] = hash_code
 
         self.arch_keys = list(self.hash_arch_matrix.keys())
         self.hash_arch_array = np.array([self.hash_arch_matrix[k].astype("uint8") for k in self.arch_keys])

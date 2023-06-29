@@ -57,3 +57,9 @@ def load_pickle(file_path):
         pickle_data = pickle.load(f)
 
     return pickle_data
+
+def load_json(json_path):
+    with open(json_path) as f:
+        py_json = json.load(f)
+
+    return py_json
