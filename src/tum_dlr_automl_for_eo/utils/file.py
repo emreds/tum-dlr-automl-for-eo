@@ -1,7 +1,8 @@
 import os
 import pickle
 from pathlib import Path
-
+import json
+import yaml
 
 def get_base_arch_paths(arch_folder: Path):
     """
@@ -63,3 +64,9 @@ def load_json(json_path):
         py_json = json.load(f)
 
     return py_json
+
+def get_general_config():
+    with open('../../../configs/general.yml', 'r') as file:
+        yaml_data = yaml.safe_load(file)
+        
+    return yaml_data

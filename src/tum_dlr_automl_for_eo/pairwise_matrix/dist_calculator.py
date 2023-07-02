@@ -1,3 +1,5 @@
+import numpy as np
+
 def calculate_pairwise_dist(small_arch_array, hash_arch_array):
     ns, h, w = small_arch_array.shape
     n, h, w = hash_arch_array.shape

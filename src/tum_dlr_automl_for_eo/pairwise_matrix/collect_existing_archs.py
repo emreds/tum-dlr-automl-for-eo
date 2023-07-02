@@ -16,7 +16,7 @@ class CollectTrainedArchs:
     def __init__(self, all_samples_path, test_results_path, sequences_path):
         self.all_sampled_archs = self.load_json(all_samples_path)
         self.trained_archs = self.load_json(test_results_path)
-        self.sequences = self.load_json(sequences_path)
+        self.sequences = self.load_json(sequences_path)[0]
         self.samples = []
         self.starting_points = set()
         self.code_hash_id = {}
@@ -25,14 +25,14 @@ class CollectTrainedArchs:
         """
         Returns the starting points with the `seq_len`.
         """
-        seq_lens = [len(self.sequences[arch]) for arch in self.sequences]
-        for arch in sequences: 
-            if len(sequences[arch]) >= seq_len and arch in trained_archs: 
+        #seq_lens = [len(self.sequences[arch]) for arch in self.sequences]
+        for arch in self.sequences: 
+            if len(self.sequences[arch]) >= seq_len and arch in self.trained_archs: 
                 self.samples.append(arch)
                 
         self.starting_points = set(self.samples)
         
-        return starting_points
+        return self.starting_points
     
     def get_code_hash_id_map(self, hash_to_id):
         """
@@ -44,7 +44,7 @@ class CollectTrainedArchs:
                     self.code_hash_id[arch_code] = {"hash": item["unique_hash"], "id": -1} 
                     break
         
-        for code, values in self.code_hash_id.items(): 
+        for code, values in self.code_hash_id.items():
             self.code_hash_id[code]["id"] = hash_to_id[values["hash"]]
         
         return self.code_hash_id
@@ -67,7 +67,6 @@ class CollectTrainedArchs:
             assert len(hash_to_id) > 0, "To get the starting id's you should give `hash_to_id` dictionary."
             self.get_code_hash_id_map(hash_to_id)
         starting_ids = sorted([self.code_hash_id[point]["id"] for point in self.starting_points])
-        set_starting_ids = set(starting_ids)
         
         return starting_ids
         
