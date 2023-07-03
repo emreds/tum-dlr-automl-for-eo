@@ -3,6 +3,9 @@ import pickle
 from pathlib import Path
 import json
 import yaml
+import numpy as np
+from json import JSONEncoder 
+
 
 def get_base_arch_paths(arch_folder: Path):
     """
@@ -66,7 +69,17 @@ def load_json(json_path):
     return py_json
 
 def get_general_config():
-    with open('../../../configs/general.yml', 'r') as file:
+    with open("../configs/general.yml", 'r') as file:
         yaml_data = yaml.safe_load(file)
         
     return yaml_data
+
+class NumpyArrayEncoder(JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return super(NumpyArrayEncoder, self).default(obj)

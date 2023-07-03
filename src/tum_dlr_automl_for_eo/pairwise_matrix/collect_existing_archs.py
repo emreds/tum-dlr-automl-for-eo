@@ -13,21 +13,22 @@ class CollectTrainedArchs:
 
         return py_json
     
-    def __init__(self, all_samples_path, test_results_path, sequences_path):
+    def __init__(self, all_samples_path, test_results_path, sequences_path, seq_len=6):
         self.all_sampled_archs = self.load_json(all_samples_path)
-        self.trained_archs = self.load_json(test_results_path)
-        self.sequences = self.load_json(sequences_path)[0]
+        self.trained_archs = self.load_json(test_results_path)[0]
+        self.sequences = self.load_json(sequences_path)
         self.samples = []
         self.starting_points = set()
         self.code_hash_id = {}
+        self.seq_len = seq_len
         
-    def get_starting_points(self, seq_len=6): 
+    def get_starting_points(self): 
         """
         Returns the starting points with the `seq_len`.
         """
         #seq_lens = [len(self.sequences[arch]) for arch in self.sequences]
         for arch in self.sequences: 
-            if len(self.sequences[arch]) >= seq_len and arch in self.trained_archs: 
+            if len(self.sequences[arch]) >= self.seq_len and arch in self.trained_archs: 
                 self.samples.append(arch)
                 
         self.starting_points = set(self.samples)

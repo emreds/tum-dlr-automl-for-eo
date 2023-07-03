@@ -164,6 +164,7 @@ notebooks/nasbench_only108.tfrecord
 
 # architectures
 /scripts/architectures
+/scripts/*.json
 
 # Container Image
 mdsi2022-automl-torch1.9_latest.sif

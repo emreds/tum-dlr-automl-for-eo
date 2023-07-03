@@ -12,6 +12,8 @@ def calculate_pairwise_dist(small_arch_array, hash_arch_array):
     dist_matrix = np.bitwise_xor(
         flat_small_arch_array[:, np.newaxis, :], flat_hash_arch_array[np.newaxis, :, :]
     ).sum(axis=-1)
+    
+    dist_matrix = dist_matrix.astype(np.uint8)
 
     return dist_matrix
 
@@ -27,6 +29,8 @@ def calculate_sample_pairwise_dist(one_arch, hash_arch_array):
     dist_matrix = np.bitwise_xor(
         flat_one_arch[:, np.newaxis, :], flat_hash_arch_array[np.newaxis, :, :]
     ).sum(axis=-1)
+    
+    dist_matrix = dist_matrix.astype(np.uint8)
 
 
     return dist_matrix

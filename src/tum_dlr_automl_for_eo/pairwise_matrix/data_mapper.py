@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from encode_matrix import ArchitectureEncoder
+from tum_dlr_automl_for_eo.pairwise_matrix.encode_matrix import ArchitectureEncoder
 
 
 class NB101Mapper:
