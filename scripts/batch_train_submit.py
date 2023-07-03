@@ -1,8 +1,9 @@
 import json
 import logging
+import os
 import subprocess
-from pathlib import Path
 
+from pathlib import Path
 from tum_dlr_automl_for_eo.utils import file
 
 FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
@@ -73,10 +74,11 @@ if __name__ == "__main__":
     # Cancel all jobs of a user, `scancel -u`
     arch_folder = Path(ARCHITECTURE_FOLDER)
     # We remove the `arch_specs.json` file using `[:-1]`
-    arch_paths = sorted([str(path) for path in file.get_arch_paths(arch_folder)])[:-1]
-
-    # We have already trained 2 architectures for a trial
-    arch_paths = arch_paths[2:]
+    arch_paths = sorted([str(path) for path in file.get_base_arch_paths(arch_folder)])[:-1]
+    
+    # I am submitting first 200 for first trial.
+    # We have already trained the first two architectures for a trial
+    arch_paths = arch_paths[600:1000]
     print(arch_paths)
     
     job_ids = [trigger_job(path) for path in arch_paths]
@@ -87,8 +89,8 @@ if __name__ == "__main__":
     #job_id = trigger_job(sample)
     #output = get_slurm_output()
     #for row in output:
-    #    if row["JobName"] == "eo_nas":
+    #    if row["JobName"] == "torch-test":
     #        print(row["JobID"])
     #trigger_job(sample)
-    with open("./job_ids.json", 'w') as f:
+    with open("./job_ids_600-1000.json", 'w') as f:
         f.write(json.dumps(id_arch))

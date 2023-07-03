@@ -82,4 +82,6 @@ class NumpyArrayEncoder(JSONEncoder):
                 return float(obj)
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
+            if isinstance(obj, set):
+                return list(obj)
             return super(NumpyArrayEncoder, self).default(obj)

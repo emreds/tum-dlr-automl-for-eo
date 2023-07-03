@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-#SBATCH --account=hai_ml4earth
+#SBATCH --account=hai_nasb_eo
 #SBATCH --partition=booster # booster or develbooster number of gpus per node
 #SBATCH --gres=gpu:4   
 #SBATCH --job-name=eo_nas  
@@ -14,4 +14,4 @@
 cd /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/
 
 # connect interactively to the compute node for experiments
-srun /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/script_experiments.sh ${1}
+srun /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/scripts/bash_slurm/script_experiments.sh ${1} ${2} ${3}
