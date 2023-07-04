@@ -10,6 +10,9 @@
 #SBATCH --output=gpu-out.%j
 #SBATCH --error=gpu-err.%j
 
+# After the slurm upgrade on 22.05 the following line is required to get the correct number of cpus per task.
+export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
+
 # go to the repository directory                                                                                                                                                                                   
 cd /p/project/hai_nasb_eo/emre/tum-dlr-automl-for-eo/
 
