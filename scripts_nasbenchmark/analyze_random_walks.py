@@ -29,7 +29,7 @@ def plot_random_walk_i(walk_data, walk_identifier, timestep_training_local, metr
     plt.xlabel("Number of steps")
     #plt.legend(loc='upper right')
     plt.show()
-    plt.savefig(prefix_saving_location + 'random_walk_analysis/random_walk_id_' + str(walk_identifier) + '_' + str(timestep_training_local) + '_' + metric_name_local + '_.png') 
+    plt.savefig(prefix_saving_location + 'random_walk_id_' + str(walk_identifier) + '_' + str(timestep_training_local) + '_' + metric_name_local + '_.png') 
     plt.clf()
 
 def plot_distribution_ruggedness(list_ruggedness_local, timestep_training_local, metric_name_local, prefix_saving_location, min_rw_length_local=-10):
@@ -41,7 +41,7 @@ def plot_distribution_ruggedness(list_ruggedness_local, timestep_training_local,
     plt.xlabel("Ruggedness")
     plt.legend(loc='upper right')
     plt.show()
-    plt.savefig(prefix_saving_location + 'random_walk_analysis/distributions_of_ruggedness_' + str(timestep_training_local) + '_' + metric_name_local + '_.png')   
+    plt.savefig(prefix_saving_location + 'distributions_of_ruggedness_' + str(timestep_training_local) + '_' + metric_name_local + '_.png')   
     plt.clf()    
 
 def retrieve_performances(architecture_id, local_path, timestep_local):
@@ -68,7 +68,7 @@ def retrieve_performances(architecture_id, local_path, timestep_local):
 
 if __name__ == "__main__":
     min_rw_length = 6
-    json_file = 'sequences.json'
+    json_file = './nasbench_database/sequences.json'
     prefix_saving_location = './random_walk_analysis/'
     with open(json_file) as json_data:
         data = json.load(json_data)
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     plt.xlabel("Number of steps")
     #plt.legend(loc='upper right')
     plt.show()
-    plt.savefig(prefix_saving_location + 'random_walk_analysis/distributions_of_steps_in_all_walks.png')    
+    plt.savefig(prefix_saving_location + 'distributions_of_steps_in_all_walks.png')    
     plt.clf()
     #print ('DONE!')
     
@@ -127,7 +127,8 @@ if __name__ == "__main__":
             for id_walk, walk_i in enumerate(list_of_walk_fitness):
                 plot_random_walk_i(walk_data=walk_i, walk_identifier=id_walk, 
                                    timestep_training_local=timestep, 
-                                   metric_name_local=metric_i)        
+                                   metric_name_local=metric_i,
+                                   prefix_saving_location=prefix_saving_location)        
 
                 local_ruggedness = ruggedness(walk_i)
                 distribution_of_ruggedness.append(local_ruggedness)
@@ -135,7 +136,8 @@ if __name__ == "__main__":
             plot_distribution_ruggedness(list_ruggedness_local=distribution_of_ruggedness, 
                                          timestep_training_local=timestep, 
                                          min_rw_length_local=min_rw_length,
-                                         metric_name_local=metric_i)        
+                                         metric_name_local=metric_i,
+                                         prefix_saving_location=prefix_saving_location)        
             
     print ('DONE!')
             
