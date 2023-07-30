@@ -13,8 +13,7 @@ from torchmetrics.classification import MulticlassAccuracy
 from tum_dlr_automl_for_eo.datamodules.EODataLoader import EODataModule
 from tum_dlr_automl_for_eo.utils import file
 
-ARCH_DIR = "/p/project/hai_nasb_eo/training/sampled_archs"
-LOG_DIR = "/p/project/hai_nasb_eo/training/logs"
+unmatched_archs = []
 
 def print_model_params(model, limit):
     """
@@ -97,18 +96,23 @@ class CheckpointParams:
         self.exp_number = exp_number
         self.epoch = epoch
         self.base_archs = file.get_base_arch_paths(self.arch_dir)
-        self.checkpoints = file.get_checkpoint_paths(self.log_dir, exp_number, epoch)    
+        if not exp_number:
+            self.checkpoints = file.get_checkpoint_paths_clean(self.log_dir, epoch)
+        else:
+            self.checkpoints = file.get_checkpoint_paths(self.log_dir, exp_number, epoch)    
     
     
-    def __call__(self):
-        arch_paths = sorted([str(path) for path in self.base_archs])[:-1] # we exclude arch_specs.json
+    def load_params(self):
+        #arch_paths = sorted([str(path) for path in self.base_archs])[:-1] # we exclude arch_specs.json
+        arch_paths = sorted([str(path) for path in self.base_archs])
         check_param = {}
         for path in arch_paths:
-            arch_code = path.split('/')[-1]
+            arch_code = path.split('/')[-1].split('.')[0]
             if arch_code in self.checkpoints:
                 checkpoint = self.checkpoints[arch_code]
                 check_param[checkpoint] = {"params": self.get_params(path), "arch_code": arch_code}
-            
+            else: 
+                unmatched_archs.append(arch_code)
         return check_param
 
     def get_params(self, arch_path:str):
@@ -268,19 +272,24 @@ class TestArch:
         return self.macs
 
 if __name__ == "__main__": 
+    ARCH_DIR = "/p/project/hai_nasb_eo/sampled_paths/untrained_archs"
+    LOG_DIR = "/p/project/hai_nasb_eo/sampled_paths/all_trained_archs"
+
     args = training_torchlightning.get_args(require_arch=False)
     test_dataloader = prepare_test_data(args.data, args.batch_size, num_workers=0)
-    check_param = CheckpointParams(args=args, arch_dir=ARCH_DIR, log_dir=LOG_DIR, batch_size=args.batch_size, exp_number="0_0", epoch="107")
-    check_param = check_param()
+    check_param = CheckpointParams(args=args, arch_dir=ARCH_DIR, log_dir=LOG_DIR, batch_size=args.batch_size, exp_number='', epoch="107")
+    arch_params = check_param.load_params()
+    print(unmatched_archs)
+    print(arch_params)
 
     results = {}
     
-    for arch in check_param:
-        tests = TestArch(arch, test_dataloader, check_param[arch]["params"])()
+    for arch in arch_params[:3]:
+        tests = TestArch(arch, test_dataloader, arch_params[arch]["params"])()
         tests["checkpoint_path"] = arch
-        results[check_param[arch]["arch_code"]] = tests
+        results[arch_params[arch]["arch_code"]] = tests
         
-    print(results)
-    with open("./test_results_all.json", "w") as f:
+    #print(results)
+    with open("./test_results_sampled_all_paths_10.json", "w") as f:
         json.dump(results, f)
     
