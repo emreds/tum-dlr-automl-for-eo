@@ -1,6 +1,6 @@
 import json
 import os
-from pathlib import Path
+import pathlib
 from typing import Any
 
 import numpy as np
@@ -90,8 +90,8 @@ class CheckpointParams:
         self.args = args
         self.batch_size = batch_size
         self.args.batch_size = self.batch_size
-        self.arch_dir = Path(arch_dir)
-        self.log_dir = Path(log_dir)
+        self.arch_dir = pathlib.Path(arch_dir)
+        self.log_dir = pathlib.Path(log_dir)
         
         self.exp_number = exp_number
         self.epoch = epoch
@@ -279,17 +279,26 @@ if __name__ == "__main__":
     test_dataloader = prepare_test_data(args.data, args.batch_size, num_workers=0)
     check_param = CheckpointParams(args=args, arch_dir=ARCH_DIR, log_dir=LOG_DIR, batch_size=args.batch_size, exp_number='', epoch="107")
     arch_params = check_param.load_params()
-    print(unmatched_archs)
-    print(arch_params)
+    #print(unmatched_archs)
+    #print(arch_params)
 
     results = {}
     
-    for arch in arch_params[:3]:
-        tests = TestArch(arch, test_dataloader, arch_params[arch]["params"])()
-        tests["checkpoint_path"] = arch
-        results[arch_params[arch]["arch_code"]] = tests
+    for arch_path, vals in arch_params.items():
+        tests = TestArch(arch_path, test_dataloader, vals["params"])()
+        tests["checkpoint_path"] = arch_path
+        results[vals["arch_code"]] = tests
         
-    #print(results)
-    with open("./test_results_sampled_all_paths_10.json", "w") as f:
-        json.dump(results, f)
+        
+    print(results)
+
+    class PosixPathEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, pathlib.PurePosixPath):
+                return str(obj)
+            return json.JSONEncoder.default(self, obj)
+    json_str = json.dumps(results, cls=PosixPathEncoder)
+
+    with open("./test_results_sampled_all_paths", "w") as f:
+        f.write(json_str)
     
