@@ -25,6 +25,8 @@ python-dotenv   # loading env variables from .env file
 pytorch-lightning==1.5.10
 rich            # beautiful text formatting in terminal
 sh              # for running bash commands in some tests
+numpy           # for common mathematical calculations
+
 # --------- pytorch --------- #
 torch
 torchmetrics>=0.7.0
@@ -33,6 +35,8 @@ pytorch-lightning
 
 # -------- statistics -------- #
 statsmodels
+pyDOE           # a library to construct experimental designs, LHS
+thop
 # -------- data -------------- #
 h5py
 monai

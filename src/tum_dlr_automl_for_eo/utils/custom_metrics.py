@@ -1,12 +1,17 @@
 import math
 import os
+import random
 from datetime import datetime
+from random import sample
 
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
-from random import sample
+from torch.utils.data import dataloader
+from tum_dlr_automl_for_eo.utils.helper_functions import (
+    encoded_architecture_to_key, key_to_encoded_architecture)
+
 
 def mean_accuracy(acc_list):
     return float(np.mean(acc_list))
@@ -18,6 +23,7 @@ def variance(acc_list):
 
 def get_neighbors(architecture, num_of_nei_to_search):
     """
+    @param num_of_nei_to_search: number of neighbors to search
     @param architecture: 1 binary encoded architecture np.array
     @return: neighbors (number of neighbors to search) of given arc. with 1 Hamming Distance
     """
@@ -35,52 +41,59 @@ def get_neighbors(architecture, num_of_nei_to_search):
         neighbors.append(curr_architecture)
     return neighbors
 
+
 # TODO change this to actually fitness estimation
 def compute_architecture_accuracy(architecture):
-    return 50
+    return random.random()
 
 
-def perform_bils_algorithm(architectures, acc_list, starting_point, num_of_nei_to_search, max_num_of_iter):
+def perform_bils_algorithm(sampled_architectures, nb101_dict, starting_point,
+                           num_of_nei_to_search, max_num_of_iter):
     """
     @return: list [found architecture index, found architecture's accuracy]
              in case of no improvement returns given architecture info.
     """
-
-    curr_architecture_index = starting_point
+    # get the actual index from nb101 dict.
+    starting_architecture_key = sampled_architectures[starting_point]
+    curr_architecture_index = list(nb101_dict).index(starting_architecture_key)
 
     counter = 0
 
     while counter < max_num_of_iter:
-        curr_architecture = architectures[curr_architecture_index]
-        current_acc = acc_list[curr_architecture_index]
+        curr_architecture_key = list(nb101_dict.keys())[curr_architecture_index]  # key of current architecture
+
+        # we will have the accuracy of the sampled architectures, for now assign a random value
+
+        if (nb101_dict[curr_architecture_key]['accuracy']) is None:
+            nb101_dict[curr_architecture_key]['accuracy'] = compute_architecture_accuracy(curr_architecture_key)
+
+        current_acc = nb101_dict[curr_architecture_key]['accuracy']
+
         found_arc_index = curr_architecture_index
         found_acc = current_acc
+        # arc: str -> list to get neighbours
+        curr_architecture_encoded = key_to_encoded_architecture(curr_architecture_key)
+        neighbors = get_neighbors(curr_architecture_encoded,
+                                  num_of_nei_to_search)  # return binary neighbors as list
 
-        neighbors = get_neighbors(curr_architecture, num_of_nei_to_search)
-
-        # Loop over obtained 5 neighbors
+        # go through neighbors
         for neighbor in neighbors:
-            found = False
-            for arc_index, arc in enumerate(architectures):
 
-                if all(neighbor == arc):
-                    found = True
-                    if acc_list[arc_index] > current_acc:
-                        found_arc_index = arc_index
-                        found_acc = acc_list[found_arc_index]
-                    break
-            if not found:
-                accuracy = compute_architecture_accuracy(architecture=neighbor)
-                # print('neighbor', np.expand_dims(neighbor,axis=0))
-                # print('architectures', architectures)
-                acc_list = np.append(acc_list,accuracy)
-                architectures = np.append(architectures,np.expand_dims(neighbor,axis=0),axis=0)
-                if accuracy > current_acc:
-                    found_acc = accuracy
-                    found_arc_index = len(architectures) - 1
-                    # print(
-                    #     f"from:{curr_architecture_index} to:{found_arc_index} pre_acc:{current_acc} found_acc:{found_acc}")
+            # get the key of neighbor
+            neighbor_key = encoded_architecture_to_key(neighbor)
+            if neighbor_key in nb101_dict:  # if current neighbor in nb101, a valid architecture
 
+                if nb101_dict[neighbor_key]['accuracy'] is None:  # if the performance of nei. not calculated yet
+                    nb101_dict[neighbor_key]['accuracy'] = compute_architecture_accuracy(
+                        nb101_dict[neighbor_key])
+
+                if nb101_dict[neighbor_key]['accuracy'] > current_acc:  # if a better performance is found
+                    found_arc_index = list(nb101_dict).index(neighbor_key)
+                    found_acc = nb101_dict[neighbor_key]['accuracy']
+                    # print(f"neighbor index: {found_arc_index} accuracy: {found_acc}")
+            else:
+                pass
+                # print(f"neighbor is not valid !!!")
         if found_arc_index != curr_architecture_index:
             curr_architecture_index = found_arc_index
             counter += 1
@@ -90,47 +103,59 @@ def perform_bils_algorithm(architectures, acc_list, starting_point, num_of_nei_t
     return found_arc_index, found_acc
 
 
-def search_local_optima(architectures, acc_list, m_staring_points,
+def search_local_optima(sampled_architectures, nb101_dict, m_staring_points,
                         num_of_nei_to_search, max_num_of_iter_bills, number_of_iters):
     """
     Performs the BILS Algorithm for M Number of Starting Points
     Parameters
     ----------
-    architectures: np.array [(Number of Models) x (length of binary encoded architecture)] binary encoded
-    acc_list: np.array [Number of Models] Final Accuracies of Models @param starting_point
+    sampled_architectures: [str]  contains the keys of starting points, sampled from LHC
+    nb101_dict: contains nas101 dictionary, {keys_of_architectures: module_adjacency,
+                                                                    module_operations,
+                                                                    accuracy}
+    e.g: list(architectures.values())[3]
+    {'module_adjacency': [[0, 1, 0, 1, 0, 0, 0],
+                              [0, 0, 1, 0, 0, 0, 0],
+                              [0, 0, 0, 1, 1, 0, 1],
+                              [0, 0, 0, 0, 1, 0, 0],
+                              [0, 0, 0, 0, 0, 1, 0],
+                              [0, 0, 0, 0, 0, 0, 1],
+                              [0, 0, 0, 0, 0, 0, 0]],
+    'module_operations': ['input',
+                               'conv1x1-bn-relu',
+                               'conv3x3-bn-relu',
+                               'maxpool3x3',
+                               'conv1x1-bn-relu',
+                               'maxpool3x3',
+                               'output'],
+    'accuracy': None}
     m_staring_points: int Number of Starting Points
-    num_of_nei_to_search: number of neighbors to search for each architecture
-    max_num_of_iter: maximum number of iterations in BILS Algo.
-
-    Returns Found: [[found architecture index, found architecture's accuracy]..., estimated number of local optima]
+    num_of_nei_to_search: int number of neighbors to search for each architecture
+    max_num_of_iter_bills: int maximum number of iterations in BILS Algo.
+    number_of_iters: int number of iterations for local search
     -------
-
     """
     k_arr = []
     for i in range(number_of_iters):
-        number_of_architectures = len(architectures)
+        number_of_architectures = len(sampled_architectures)
         # track found architectures to decide number of local optima.
         k = 0
         # randomly choose M starting points
         starting_points = sample(range(0, number_of_architectures), m_staring_points)
         obtained_results = []
         for starting_point in starting_points:
-            # perform BILS Algorithm for each starting points
             k += 1
-            found_arch_index, found_acc = perform_bils_algorithm(architectures, acc_list, starting_point,
+            found_arch_index, found_acc = perform_bils_algorithm(sampled_architectures, nb101_dict, starting_point,
                                                                  num_of_nei_to_search, max_num_of_iter_bills)
+           # print(f"found architecture index: {found_arch_index} found accuracy: {found_acc}")
             if [found_arch_index, found_acc] in obtained_results:
                 k_arr.append(k)
                 break
             else:
                 obtained_results.append([found_arch_index, found_acc])
-        if len(k_arr) != i+1 and k == len(starting_points):
-            k_arr.append(k)
-
-    k_mean = np.mean(np.array(k_arr))
-    local_optima_estimation = math.pow(k_mean,2.0)/(-1*np.log(0.5))
-
-    return k_arr, local_optima_estimation
+    # k_mean = np.mean(np.array(k_arr))
+    # local_optima_estimation = math.pow(k_mean, 2.0) / (-1 * np.log(0.5))
+    return obtained_results
 
 
 def positive_persistence(acc_list):
@@ -253,3 +278,31 @@ def get_fig_name(exp_name, **kwargs):
     fig_name += ".png"
 
     return fig_name
+
+def calculate_normal(dataloader: dataloader):
+        # Calculate the mean and standard deviation
+        mean = 0.0
+        std = 0.0
+        total_samples = 0
+
+        for data, _ in dataloader:
+            batch_samples = data.size(0)
+            data = data.view(batch_samples, data.size(1), -1)
+            mean += data.mean(2).sum(0)
+            total_samples += batch_samples
+
+        mean /= total_samples
+        
+        pixel_cnt = 0
+        var = 0
+        for data, _ in dataloader:
+            batch_samples = data.size(0)
+            data = data.view(batch_samples, data.size(1), -1)
+            var += torch.square(data - mean.unsqueeze(1)).sum([0,2])
+            pixel_cnt += data.nelement()
+        
+        std = torch.sqrt(var / pixel_cnt)
+        print("Mean:", mean)
+        print("Std:", std)
+        
+        return mean, std
