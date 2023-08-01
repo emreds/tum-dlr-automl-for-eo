@@ -9,8 +9,8 @@ import pickle
 if __name__ == "__main__":
     
     arch_str_prefix = 'arch_'
-    path = "/p/project/hai_nasb_eo/training/logs/arch_0/version_0/metrics.csv"
-    path = '/p/project/hai_nasb_eo/sampled_paths/all_trained_archs/'
+ 
+    path = '/p/project/hai_nasb_eo/sampled_paths/training/logs/'
 
     ### collect all architectures ids in directory
     # list of all content in a directory, filtered so only directories are returned
@@ -18,8 +18,8 @@ if __name__ == "__main__":
     # deal with duplicates
     dir_list_updated = [dir_local for dir_local in dir_list if len(set(dir_local.split('_'))) == len(dir_local.split("_"))] 
     
-    file_test_results = '../nasbench_database/test_results_sampled_all_paths.json'
-    file_specs_archs = '../nasbench_database/path_logs.json'
+    file_test_results = '../nasbench_database/test_results_all.json'
+    file_specs_archs = '../nasbench_database/arch_specs.json'
     
     dict_database_to_pickle_macro = dict()    
     dict_database_to_pickle_micro = dict()    
@@ -36,12 +36,11 @@ if __name__ == "__main__":
     
     
     with open(file_specs_archs) as json_data:
-        arch_specs_list = json.load(json_data)
+        arch_specs_dict = json.load(json_data)
     
-    arch_specs_dict = {arch_specs_list[path_idx][arch_idx]['id']: arch_specs_list[path_idx][arch_idx]  for path_idx in range(len(arch_specs_list)) for arch_idx in range(len(arch_specs_list[path_idx]))}
-        
+    
     with open(file_test_results) as json_data:
-        test_results_dict = json.load(json_data)
+        test_results_dict = json.load(json_data)[0]
     
     #print(arch_specs_dict.keys())
     #print(test_results_dict.keys())
@@ -56,12 +55,12 @@ if __name__ == "__main__":
         #print(arch_specs_dict[local_id]['id'])
         #print(arch_str_prefix)
         #print(local_id)
-        assert arch_str_prefix + str(local_id) == arch_str_prefix + str(arch_specs_dict[local_id]['id'])
+        assert arch_str_prefix + str(local_id) == arch_specs_dict[local_id]['arch_code']
         
         empty = False
         # collect validation and training architecture at time step t_j
         try:
-            pd_arch_i = pd.read_csv(path + arch_dir_i + '/metrics.csv')
+            pd_arch_i = pd.read_csv(path + arch_dir_i + '/version_0/metrics.csv')
         except pd.errors.EmptyDataError:
             empty = True
             cpt_empty_evals += 1
@@ -69,14 +68,14 @@ if __name__ == "__main__":
                
         if empty is False and pd_arch_i.empty is False:
             
-            #binary_code_i = arch_specs_dict[local_id]['binary_encoded']
+            binary_code_i = arch_specs_dict[local_id]['binary_encoded']
             matrix_i = arch_specs_dict[local_id]['module_adjacency']
             list_ops_i = arch_specs_dict[local_id]['module_operations']
             hash_arch_i = arch_specs_dict[local_id]['unique_hash']
             num_params = test_results_dict[arch_dir_i]['num_params']
 
             dict_spec_mix_i = dict()
-            #dict_spec_mix_i['arch_binary_encoding'] = binary_code_i
+            dict_spec_mix_i['arch_binary_encoding'] = binary_code_i
             dict_spec_mix_i['module_adjacency'] = matrix_i
             dict_spec_mix_i['module_operations'] = list_ops_i
             dict_spec_mix_i['trainable_parameters'] = num_params
