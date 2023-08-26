@@ -1,15 +1,15 @@
 #!/usr/bin/env
-from matplotlib import pyplot as plt
-import numpy as np
-import os
-import pandas as pd
 import json
+import os
 import pickle
+
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 
 if __name__ == "__main__":
     
     arch_str_prefix = 'arch_'
-    path = "/p/project/hai_nasb_eo/training/logs/arch_0/version_0/metrics.csv"
     path = '/p/project/hai_nasb_eo/sampled_paths/all_trained_archs/'
 
     ### collect all architectures ids in directory
