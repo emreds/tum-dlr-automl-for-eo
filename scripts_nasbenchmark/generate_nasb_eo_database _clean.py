@@ -187,10 +187,12 @@ if __name__ == "__main__":
     list_filenames_to_save = [pickle_file_for_database_micro, pickle_file_for_database_macro, 
                                 pickle_file_for_database_latency, pickle_file_for_database_MAC]
 
+    
+    
     # save the data
-    for file_name_i, dataset_i in zip(list_filenames_to_save, list_data_to_save):
-        with open(file_name_i, 'wb') as f:
-            pickle.dump(dataset_i, f)
+    #for file_name_i, dataset_i in zip(list_filenames_to_save, list_data_to_save):
+    #    with open(file_name_i, 'wb') as f:
+    #        pickle.dump(dataset_i, f)
 
     print ('DONE!')
     
