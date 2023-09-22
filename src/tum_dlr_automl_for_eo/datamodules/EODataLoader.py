@@ -1,10 +1,13 @@
-from torch.utils.data import DataLoader
 import logging as log
-from pytorch_lightning import LightningDataModule
-from .So2SatDataSet import So2SatDataSet
-from monai.apps import download_url
-import os, zipfile
+import os
 import ssl
+import zipfile
+
+from monai.apps import download_url
+from pytorch_lightning import LightningDataModule
+from torch.utils.data import DataLoader
+
+from .So2SatDataSet import So2SatDataSet
 
 ssl._create_default_https_context = ssl._create_unverified_context
 

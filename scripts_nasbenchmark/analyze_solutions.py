@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
+plt.rcParams.update({'font.size': 15})
 
 def convert_mac_count(macs: str) -> float:
     """
@@ -83,8 +84,9 @@ if __name__ == "__main__":
                     list_validation_t.append(validation_acc_t)
             
             
+            
             if timestep == 107:
-                
+                print(f"Average of {metric_i} at timestep {timestep}: {np.mean(list_validation_t)}")
                 list_test_t = list()
                 list_test_latency = list()
                 test_MACs = list()
@@ -117,6 +119,10 @@ if __name__ == "__main__":
                 plt.hist(list_test_t, density=True, cumulative=False, label='Test', 
                  histtype='step', alpha=0.55, color='green', bins=N_bins)
                 
+            if metric_i == 'avg_macro':
+                metric_i = "macro_accuracy"
+            else:
+                metric_i = "micro_accuracy"
             # plot the CDFs and PDFs of validation and training accuracies at timesteps t_js
             plt.hist(list_training_t, density=True, cumulative=False, label='Train', 
                  histtype='step', alpha=0.55, color='purple', bins=N_bins)
@@ -124,12 +130,12 @@ if __name__ == "__main__":
             plt.hist(list_validation_t, density=True, cumulative=False, label='Validation', 
                  histtype='step', alpha=0.55, color='red', bins=N_bins)
                                        
-            plt.title("PDF of performance after Epoch :" + str(timestep+1) + '- Metric: ' + metric_i)
+            plt.title("PDF of performance after Epoch :" + str(timestep) +'\n'+ 'Metric: ' + metric_i)
             plt.ylabel("Density")
             plt.xlabel("Fitness value (Accuracy)")
             plt.legend(loc='upper left')
             plt.show()
-            plt.savefig(prefix_saving_location + 'results_PDF_' + str(timestep+1) + '_' + metric_i + '_' + '_.png')    
+            plt.savefig(prefix_saving_location + 'results_PDF_' + str(timestep) + '_' + metric_i + '_' + '_.png')    
             plt.clf()
 
             plt.hist(list_training_t, density=True, cumulative=True, label='Train', 
@@ -142,112 +148,124 @@ if __name__ == "__main__":
                 plt.hist(list_test_t, density=True, cumulative=True, label='Test', 
                      histtype='step', alpha=0.55, color='green', bins=N_bins)
                 
-            plt.title("CDF of performance after Epoch:" + str(timestep+1) + '- Metric: ' + metric_i)
+            plt.title("CDF of performance after Epoch:" + str(timestep) +'\n'+ 'Metric: ' + metric_i)
             plt.ylabel("Density")
             plt.xlabel("Fitness value (Accuracy)")
             plt.legend(loc='upper left')
             plt.show()
-            plt.savefig(prefix_saving_location + 'results_CDF_' + str(timestep+1) + '_' + metric_i  + '_.png')    
+            plt.savefig(prefix_saving_location + 'results_CDF_' + str(timestep) + '_' + metric_i  + '_.png')    
             plt.clf()
             
             if timestep == 107:
+                # COMBINED PLOTS of MACs and Accuracy
+                plt.scatter(list_test_latency, test_MACs, marker='o')
+                plt.xlabel("Inference Latencies")
+                plt.ylabel("MACs")
+                plt.title("Inference Latency vs MACs")
+                plt.xticks(rotation=45)
+                plt.show()
+                plt.savefig(prefix_saving_location + 'latency_macs' + '_.png')  
+                plt.clf()
+                
+                
                 # LATENCY PLOTS
                 
                 plt.hist(list_test_latency, density=True, cumulative=True, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("CDF of Inference Latency after Epoch:" + str(timestep+1))
+                plt.title("CDF of Inference Latency after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Latency value (in Milliseconds)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'latency_CDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'latency_CDF_' + str(timestep) + '_.png')    
                 plt.clf()
                 
 
                 plt.hist(list_test_latency, density=True, cumulative=False, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("PDF of Inference Latency after Epoch:" + str(timestep+1))
+                plt.title("PDF of Inference Latency after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Latency value (in Milliseconds)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'latency_PDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'latency_PDF_' + str(timestep) + '_.png')    
                 plt.clf()
                 
                 #MACS PLOTS
                 plt.hist(test_MACs, density=True, cumulative=True, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("CDF of MACs after Epoch:" + str(timestep+1))
+                plt.title("CDF of MACs after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Number of MACs(Millions)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'MACS_CDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'MACS_CDF_' + str(timestep) + '_.png')    
                 plt.clf()
                 
 
                 plt.hist(test_MACs, density=True, cumulative=False, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("PDF of MACs after Epoch:" + str(timestep+1))
+                plt.title("PDF of MACs after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Number of MACs(Millions)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'MACS_PDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'MACS_PDF_' + str(timestep) + '_.png')    
                 plt.clf()
                 
                 #NUM PARAMS PLOTS
                 plt.hist(test_num_params, density=True, cumulative=True, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("CDF of Number of Parameters after Epoch:" + str(timestep+1))
+                plt.title("CDF of Number of Parameters after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Number of Parameters(Millions)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'params_CDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'params_CDF_' + str(timestep) + '_.png')    
                 plt.clf()
                 
                 
                 plt.hist(test_num_params, density=True, cumulative=False, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("PDF of Number of Parameters after Epoch:" + str(timestep+1))
+                plt.title("PDF of Number of Parameters after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Number of Parameters(Millions)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'params_PDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'params_PDF_' + str(timestep) + '_.png')    
                 plt.clf()
                 
                 #ARCH SIZE PLOTS
                 plt.hist(test_arch_sizes, density=True, cumulative=True, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("CDF of Architecture Size after Epoch:" + str(timestep+1))
+                plt.title("CDF of Architecture Size after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Arch Size (MB)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'arch_size_CDF_' + str(timestep+1) +  '_.png')    
+                plt.savefig(prefix_saving_location + 'arch_size_CDF_' + str(timestep) +  '_.png')    
                 plt.clf()
                 
 
                 plt.hist(test_arch_sizes, density=True, cumulative=False, label='Test', 
                      histtype='step', alpha=0.55, color='blue', bins=N_bins)
                 
-                plt.title("PDF of Architecture Size after Epoch:" + str(timestep+1))
+                plt.title("PDF of Architecture Size after Epoch:" + str(timestep))
                 plt.ylabel("Density")
                 plt.xlabel("Arch Size (MB)")
                 plt.legend(loc='upper left')
                 plt.show()
-                plt.savefig(prefix_saving_location + 'arch_size_PDF_' + str(timestep+1) + '_.png')    
+                plt.savefig(prefix_saving_location + 'arch_size_PDF_' + str(timestep) + '_.png')    
                 plt.clf()
 
             print("Number of items: ", len(list_validation_t), len(dir_list_updated))
+            
             print ('DONE!')
             

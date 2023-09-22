@@ -7,6 +7,7 @@ import pandas as pd
 import statsmodels.api as sm
 from matplotlib import pyplot as plt
 
+plt.rcParams.update({'font.size': 14})
 
 def ruggedness(data, lags=1):
     """
@@ -34,7 +35,11 @@ def plot_random_walk_i(walk_data, walk_identifier, timestep_training_local, metr
     plt.clf()
 
 def plot_distribution_ruggedness(list_ruggedness_local, timestep_training_local, metric_name_local, prefix_saving_location, min_rw_length_local=-10):
-    plt.title("PDF of Ruggedness for walks of minimal length - N=" + str(min_rw_length_local))
+    if metric_name_local == "avg_macro":
+        plt.title("PDF of Ruggedness - macro accuracy")
+    else:
+        plt.title("PDF of Ruggedness - micro accuracy")
+    #plt.title("PDF of Ruggedness - ")
     plt.xlim([-20, 20])
     plt.hist(list_ruggedness_local, density=True, label='Training time (Epochs):' + str(timestep_training_local), 
          histtype='step', alpha=0.55, color='blue', bins=100)
