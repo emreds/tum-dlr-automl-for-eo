@@ -93,11 +93,9 @@ if __name__ == "__main__":
          histtype='step', alpha=0.55, color='blue', bins=40)
     plt.ylabel("Density")
     plt.xlabel("Number of steps")
-    #plt.legend(loc='upper right')
     plt.show()
     plt.savefig(prefix_saving_location + 'distributions_of_steps_in_all_walks.png')    
     plt.clf()
-    #print ('DONE!')
     
     path = '/p/project/hai_nasb_eo/sampled_paths/all_trained_archs/'
 
